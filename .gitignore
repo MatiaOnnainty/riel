@@ -1,0 +1,11 @@
+# Sesión de pruebas aislada (la crea dev.sh)
+.dev/
+
+# Paquetes generados por gnome-extensions pack
+*.shell-extension.zip
+
+# Esquemas compilados: se generan al empaquetar
+gschemas.compiled
+
+node_modules/
+.env

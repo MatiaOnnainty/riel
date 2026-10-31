@@ -10,5 +10,5 @@ gschemas.compiled
 node_modules/
 .env
 
-# Fondo de pantalla (imagen de terceros, solo para diseñar)
-docs/diseno/fondo-*.jpg
+# Diseños y fondo de pantalla: material de trabajo, no se publica
+docs/diseno/

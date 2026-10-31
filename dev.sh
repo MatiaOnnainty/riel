@@ -34,6 +34,11 @@ mkdir -p "$dev/config" "$dev/cache" "$dev/state" "$dev/data/gnome-shell/extensio
 for d in applications icons fonts; do
   [[ -e "$HOME/.local/share/$d" && ! -e "$dev/data/$d" ]] && ln -s "$HOME/.local/share/$d" "$dev/data/$d"
 done
+# Carpetas personales en español (Escritorio, Descargas…): sin esto, los
+# íconos del escritorio de Ubuntu buscan ~/Desktop y se reinician sin parar
+for f in user-dirs.dirs user-dirs.locale; do
+  [[ -e "$HOME/.config/$f" && ! -e "$dev/config/$f" ]] && ln -s "$HOME/.config/$f" "$dev/config/$f"
+done
 
 # Riel: enlazada solo cuando ya tiene código
 enlace="$dev/data/gnome-shell/extensions/$uuid"

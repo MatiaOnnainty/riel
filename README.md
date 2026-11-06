@@ -8,7 +8,7 @@ Extensión de GNOME Shell que aprovecha mejor el panel superior:
   Code y más.
 - **Derecha:** el menú del sistema, como está hoy.
 
-> Estado: en planificación. Todavía no hay código.
+> Estado: fase 1 en curso (islas, apps fijadas y abiertas, reloj).
 
 ## Versiones
 
@@ -71,7 +71,12 @@ gnome-extensions enable riel@matiaonnainty.github.io
 
 | Ruta | Qué contiene |
 | --- | --- |
-| `extension/` | La extensión tal como se instala (`metadata.json`, y más adelante `extension.js`, `prefs.js`, `stylesheet.css`) |
+| `extension/` | La extensión tal como se instala |
+| `extension/extension.js` | Arma y desarma las partes en `enable()` / `disable()` |
+| `extension/islas.js` | Panel transparente con tres islas y sus esquinas cóncavas |
+| `extension/apps.js` | Isla izquierda: cuadrícula de apps, fijadas y abiertas |
+| `extension/reloj.js` | Isla central: hora y fecha |
+| `extension/stylesheet.css` | Colores, radios y tamaños de las islas |
 | `dev.sh` | Shell de pruebas aislado |
 | `.dev/` | Configuración de la sesión de pruebas (no se sube) |
 

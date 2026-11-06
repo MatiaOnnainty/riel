@@ -1,0 +1,87 @@
+/* Riel. Todo cuelga de #panel.riel, así nada cambia con Riel desactivada. */
+
+/* El panel queda transparente: entre las islas se ve el fondo de pantalla */
+#panel.riel {
+  background-color: transparent;
+  box-shadow: none;
+  border: none;
+  height: 36px;
+}
+
+/* Islas: mismo color que .riel-esquina */
+#panel.riel #panelLeft,
+#panel.riel #panelCenter,
+#panel.riel #panelRight {
+  background-color: #0b0b0e;
+}
+
+/* Del lado de las esquinas no hace falta padding: cada esquina ocupa su
+   ancho dentro de la isla */
+#panel.riel #panelLeft {
+  border-radius: 0 0 18px 0;
+  padding: 0 0 0 6px;
+}
+
+#panel.riel #panelCenter {
+  border-radius: 0 0 18px 18px;
+}
+
+#panel.riel #panelRight {
+  border-radius: 0 0 0 18px;
+  padding: 0 6px 0 0;
+}
+
+/* Unión cóncava de la isla con el borde de la pantalla */
+#panel.riel .riel-esquina {
+  color: #0b0b0e;
+  width: 14px;
+  height: 14px;
+}
+
+#panel.riel .riel-separador {
+  width: 1px;
+  height: 16px;
+  margin: 0 6px;
+  background-color: rgba(242, 242, 242, 0.2);
+}
+
+/* Isla izquierda. Ancho = alto del botón, así el hover es un círculo:
+   ícono 20px + padding 2 × 5px + borde del tema 2 × 3px = 36px */
+#panel.riel .riel-app {
+  -natural-hpadding: 0;
+  -minimum-hpadding: 0;
+  padding: 0 5px;
+  margin: 0 1px;
+}
+
+#panel.riel .riel-app .riel-app-punto {
+  width: 4px;
+  height: 4px;
+  margin-bottom: 1px;
+  border-radius: 2px;
+  background-color: rgba(242, 242, 242, 0.6);
+}
+
+#panel.riel .riel-app:enfocada .riel-app-punto {
+  width: 10px;
+  background-color: #f2f2f2;
+}
+
+#panel.riel .riel-cuadricula .system-status-icon {
+  padding: 0;
+  margin: 0 2px;
+}
+
+/* Isla central */
+#panel.riel .riel-reloj {
+  padding: 0 6px;
+}
+
+#panel.riel .riel-hora {
+  font-size: 1.25em;
+  font-weight: 600;
+}
+
+#panel.riel .riel-fecha {
+  font-weight: normal;
+}

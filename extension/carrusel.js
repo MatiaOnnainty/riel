@@ -1,6 +1,6 @@
 // Carrusel de la isla central expandida: una página a la vez, cada una con
 // su propio tamaño (Música compacta, Calendario grande). Se cambia de página
-// con los botones ‹ › de los costados, con los puntos o con Ctrl+← / Ctrl+→.
+// con los botones ‹ › de los costados o con los puntos.
 //
 // Cada página es un actor con avisos opcionales: alAbrirCarrusel(),
 // alMostrar() y alOcultar() (para que solo trabaje mientras se ve), y
@@ -20,7 +20,7 @@ const ENTRADA_MS = 140;
 export const Carrusel = GObject.registerClass(
 class Carrusel extends St.BoxLayout {
     _init(paginas) {
-        super._init({style_class: 'riel-carrusel', vertical: true, reactive: true});
+        super._init({style_class: 'riel-carrusel', vertical: true});
         this._paginas = paginas;
         this._actual = 0;
         this._visible = false;
@@ -73,19 +73,6 @@ class Carrusel extends St.BoxLayout {
             this._puntos.add_child(punto);
         });
         this.add_child(this._puntos);
-
-        // Ctrl+← / Ctrl+→: las flechas solas ya las usa GNOME para saltar
-        // entre los menús del panel y para moverse entre los días
-        this.connect('key-press-event', (_actor, evento) => {
-            if (!(evento.get_state() & Clutter.ModifierType.CONTROL_MASK))
-                return Clutter.EVENT_PROPAGATE;
-            const tecla = evento.get_key_symbol();
-            if (tecla === Clutter.KEY_Left || tecla === Clutter.KEY_Right) {
-                this.ir(this._actual + (tecla === Clutter.KEY_Left ? -1 : 1));
-                return Clutter.EVENT_STOP;
-            }
-            return Clutter.EVENT_PROPAGATE;
-        });
     }
 
     // Se abre en la primera página que diga preferida(), o en la primera

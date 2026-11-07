@@ -19,12 +19,25 @@ export default class Riel extends Extension {
         this._apps = new Apps();
         Main.panel._leftBox.insert_child_at_index(this._apps, 0);
 
+        // El reloj de Riel reemplaza al botón de fecha de GNOME
+        this._fecha = Main.panel.statusArea.dateMenu?.container;
+        this._fecha?.hide();
         this._reloj = new Reloj();
+        Main.panel.addToStatusArea('riel-reloj', this._reloj, 0, 'center');
+        // Super+V y "cerrar el calendario" (al activar una ventana) apuntan
+        // al botón de fecha de GNOME, que está oculto: pasan al de Riel
+        Main.panel.toggleCalendar = () => Main.panel._toggleMenu(this._reloj);
+        Main.panel.closeCalendar = () => Main.panel._closeMenu(this._reloj);
     }
 
     disable() {
+        // Sin estas copias propias vuelven los métodos originales del panel
+        delete Main.panel.toggleCalendar;
+        delete Main.panel.closeCalendar;
         this._reloj?.destroy();
         this._reloj = null;
+        this._fecha?.show();
+        this._fecha = null;
 
         this._apps?.destroy();
         this._apps = null;

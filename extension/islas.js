@@ -13,15 +13,16 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 // Esquina cóncava. Con 'inicio' o 'final' va en ese extremo de la isla:
 // ocupa su lugar dentro de la caja, como si fuera padding, y se dibuja
-// desplazada hacia afuera. Con 'union' la ubica quien la usa, en el ángulo
-// donde una isla expandida se ensancha por debajo del panel. El color y el
+// desplazada hacia afuera. Con 'union' (a la derecha de la isla) o
+// 'union-izq' (a la izquierda) la ubica quien la usa, en el ángulo donde una
+// isla expandida se ensancha por debajo del panel. El color y el
 // tamaño vienen de .riel-esquina en stylesheet.css.
 export const Esquina = GObject.registerClass(
 class Esquina extends St.DrawingArea {
     _init(forma) {
         super._init({style_class: 'riel-esquina', y_align: Clutter.ActorAlign.START});
         this._forma = forma;
-        if (forma !== 'union') {
+        if (!forma.startsWith('union')) {
             this.connect('notify::width', () => {
                 this.translation_x = forma === 'inicio' ? -this.width : this.width;
             });
@@ -44,6 +45,10 @@ class Esquina extends St.DrawingArea {
             cr.moveTo(0, alto);
             cr.lineTo(ancho, alto);
             cr.arc(ancho, 0, ancho, Math.PI / 2, Math.PI);
+        } else if (this._forma === 'union-izq') {
+            cr.moveTo(ancho, alto);
+            cr.lineTo(0, alto);
+            cr.arcNegative(0, 0, ancho, Math.PI / 2, 0);
         } else {
             cr.moveTo(ancho, 0);
             cr.lineTo(0, 0);

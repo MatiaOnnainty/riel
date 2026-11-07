@@ -90,6 +90,58 @@
   font-weight: normal;
 }
 
+#panel.riel .riel-reloj-boton {
+  -natural-hpadding: 8px;
+  -minimum-hpadding: 4px;
+}
+
+/* Con el carrusel abierto la isla expandida ya marca el estado */
+#panel.riel .riel-reloj-boton:checked,
+#panel.riel .riel-reloj-boton:active {
+  box-shadow: none;
+}
+
+#panel.riel #panelCenter:expandida {
+  border-radius: 0;
+}
+
+/* Isla central expandida (fase 3): el menú del reloj, sin flecha ni borde
+   propios, pegado abajo de la isla y con su mismo color */
+.riel-centro {
+  -arrow-border-radius: 0;
+  -arrow-border-width: 0;
+  -arrow-background-color: transparent;
+  -arrow-base: 0;
+  -arrow-rise: 0;
+  -boxpointer-gap: 0;
+}
+
+.riel-centro .popup-menu-content {
+  background-color: #0b0b0e;
+  border: none;
+  border-radius: 0 0 18px 18px;
+  box-shadow: none;
+  margin: 0;
+  padding: 10px 14px 12px;
+}
+
+.riel-carrusel-puntos {
+  spacing: 6px;
+  padding-top: 8px;
+}
+
+.riel-carrusel-punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background-color: rgba(242, 242, 242, 0.3);
+}
+
+.riel-carrusel-punto:checked {
+  width: 16px;
+  background-color: #f2f2f2;
+}
+
 /* Isla izquierda expandida (fase 2). La vista vive fuera de #panel, en la
    capa de la interfaz, por eso sus reglas no cuelgan de #panel.riel */
 #panel.riel #panelLeft:expandida {

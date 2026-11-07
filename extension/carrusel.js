@@ -100,6 +100,7 @@ class Carrusel extends St.BoxLayout {
             this._paginas[indice].alMostrar?.();
 
         this._nombre.text = this._paginas[indice].nombre;
+        this._nombre.visible = !this._paginas[indice].conTitulo;
         this._puntos.get_children().forEach((punto, i) => {
             if (i === indice)
                 punto.add_style_pseudo_class('checked');

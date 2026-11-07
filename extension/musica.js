@@ -34,8 +34,9 @@ function boton(icono, nombre, clase = 'riel-boton-redondo') {
     });
 }
 
-export const PaginaMusica = GObject.registerClass(
-class PaginaMusica extends St.BoxLayout {
+export const PaginaMusica = GObject.registerClass({
+    Signals: {'resumen-cambio': {}},
+}, class PaginaMusica extends St.BoxLayout {
     _init() {
         super._init({style_class: 'riel-pagina riel-musica', vertical: true});
         this.nombre = 'Música';
@@ -69,7 +70,10 @@ class PaginaMusica extends St.BoxLayout {
         this._armarCuerpo();
 
         this._reproductores = new Reproductores();
-        this._reproductores.connect('cambio', () => this._dibujar());
+        this._reproductores.connect('cambio', () => {
+            this._dibujar();
+            this.emit('resumen-cambio');
+        });
 
         this._mezclador = Volume.getMixerControl();
         this._mezclador.connectObject(
@@ -82,6 +86,18 @@ class PaginaMusica extends St.BoxLayout {
             this._reproductores.destroy();
         });
         this._dibujar();
+    }
+
+    // Para la isla compacta: el que sonó último, con su carátula (o el ícono
+    // de su app) y "título · artista"
+    resumen() {
+        const r = this._reproductores.todos[0];
+        if (!r)
+            return null;
+        const gicon = r.caratula
+            ? new Gio.FileIcon({file: Gio.File.new_for_uri(r.caratula)})
+            : r.app?.get_icon() ?? new Gio.ThemedIcon({name: 'audio-x-generic-symbolic'});
+        return {gicon, texto: r.artistas ? `${r.titulo} · ${r.artistas}` : r.titulo};
     }
 
     // El carrusel abre en Música si hay algún reproductor

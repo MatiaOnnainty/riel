@@ -3,8 +3,12 @@
 // con los botones ‹ › de los costados o con los puntos.
 //
 // Cada página es un actor con avisos opcionales: alAbrirCarrusel(),
-// alMostrar() y alOcultar() (para que solo trabaje mientras se ve), y
-// preferida() (si el carrusel debería abrir en ella).
+// alMostrar() y alOcultar() (para que solo trabaje mientras se ve),
+// preferida() (si el carrusel debería abrir en ella) y resumen() con la
+// señal 'resumen-cambio' (lo que muestra la isla compacta).
+//
+// Panel activo: el último en el que se cerró la isla. Ahí vuelve a abrir, y
+// es el que resume la isla compacta (señal 'activa-cambio').
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
@@ -17,12 +21,14 @@ const SALIDA_MS = 90;
 const TAMANO_MS = 200;
 const ENTRADA_MS = 140;
 
-export const Carrusel = GObject.registerClass(
-class Carrusel extends St.BoxLayout {
+export const Carrusel = GObject.registerClass({
+    Signals: {'activa-cambio': {}},
+}, class Carrusel extends St.BoxLayout {
     _init(paginas) {
         super._init({style_class: 'riel-carrusel', vertical: true});
         this._paginas = paginas;
         this._actual = 0;
+        this._ultimo = -1;
         this._visible = false;
 
         const fila = new St.BoxLayout({style_class: 'riel-carrusel-fila'});
@@ -75,17 +81,32 @@ class Carrusel extends St.BoxLayout {
         this.add_child(this._puntos);
     }
 
-    // Se abre en la primera página que diga preferida(), o en la primera
+    // Hasta el primer cierre, la primera que diga preferida() (Música si
+    // suena, si no Calendario)
+    get _indiceActivo() {
+        if (this._ultimo >= 0)
+            return this._ultimo;
+        const preferida = this._paginas.findIndex(pagina => pagina.preferida?.());
+        return preferida >= 0 ? preferida : 0;
+    }
+
+    get paginaActiva() {
+        return this._paginas[this._indiceActivo];
+    }
+
     alAbrir() {
         this._visible = true;
         this._paginas.forEach(pagina => pagina.alAbrirCarrusel?.());
-        const preferida = this._paginas.findIndex(pagina => pagina.preferida?.());
-        this.ir(preferida >= 0 ? preferida : 0, false);
+        this.ir(this._indiceActivo, false);
     }
 
     alCerrar() {
         this._visible = false;
         this._paginas[this._actual].alOcultar?.();
+        if (this._ultimo !== this._actual) {
+            this._ultimo = this._actual;
+            this.emit('activa-cambio');
+        }
     }
 
     // El índice da la vuelta: después de la última viene la primera
@@ -100,6 +121,7 @@ class Carrusel extends St.BoxLayout {
             this._paginas[indice].alMostrar?.();
 
         this._nombre.text = this._paginas[indice].nombre;
+        this._nombre.visible = !this._paginas[indice].conTitulo;
         this._puntos.get_children().forEach((punto, i) => {
             if (i === indice)
                 punto.add_style_pseudo_class('checked');

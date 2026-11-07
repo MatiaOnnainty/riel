@@ -38,7 +38,7 @@
   height: 14px;
 }
 
-#panel.riel .riel-separador {
+.riel-separador {
   width: 1px;
   height: 16px;
   margin: 0 6px;
@@ -113,7 +113,8 @@
   -arrow-background-color: transparent;
   -arrow-base: 0;
   -arrow-rise: 0;
-  -boxpointer-gap: 0;
+  /* Crece desde el borde de arriba, sobre la isla del reloj (alto del panel) */
+  -boxpointer-gap: -36px;
 }
 
 .riel-centro .popup-menu-content {
@@ -122,12 +123,19 @@
   border-radius: 0 0 18px 18px;
   box-shadow: none;
   margin: 0;
-  padding: 10px 14px 12px;
+  padding: 0 18px 12px;
+  color: #f2f2f2;
+}
+
+.riel-carrusel-nombre {
+  padding-top: 10px;
+  font-size: 0.85em;
+  color: rgba(242, 242, 242, 0.55);
 }
 
 .riel-carrusel-puntos {
   spacing: 6px;
-  padding-top: 8px;
+  padding-top: 6px;
 }
 
 .riel-carrusel-punto {
@@ -180,5 +188,219 @@
   margin-top: 6px;
   font-size: 0.9em;
   text-align: center;
+}
+
+/* Páginas del carrusel: encabezado común (ocupa el lugar de la isla) */
+.riel-pagina-encabezado {
+  height: 44px;
+  spacing: 10px;
+}
+
+.riel-divisor-encabezado {
+  margin: 0;
+}
+
+.riel-pagina-icono {
+  icon-size: 18px;
+  color: #3d8bfd;
+}
+
+.riel-pagina-titulo {
+  font-size: 1.15em;
+  font-weight: bold;
+}
+
+.riel-encabezado-fecha {
+  color: rgba(242, 242, 242, 0.85);
+}
+
+.riel-encabezado-hora {
+  font-size: 1.15em;
+}
+
+.riel-divisor {
+  height: 1px;
+  margin: 8px 0;
+  background-color: rgba(242, 242, 242, 0.12);
+}
+
+.riel-divisor-vertical {
+  width: 1px;
+  margin: 0 18px;
+  background-color: rgba(242, 242, 242, 0.12);
+}
+
+.riel-boton-redondo {
+  padding: 6px;
+  border-radius: 999px;
+  color: #f2f2f2;
+}
+
+.riel-boton-redondo:hover,
+.riel-boton-redondo:focus {
+  background-color: rgba(242, 242, 242, 0.1);
+}
+
+.riel-boton-icono {
+  icon-size: 16px;
+}
+
+.riel-boton-pastilla {
+  padding: 3px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(242, 242, 242, 0.25);
+  background-color: rgba(242, 242, 242, 0.06);
+  color: #f2f2f2;
+  font-size: 0.9em;
+}
+
+.riel-boton-pastilla:hover,
+.riel-boton-pastilla:focus {
+  background-color: rgba(242, 242, 242, 0.14);
+}
+
+/* Calendario */
+.riel-calendario-cuerpo {
+  padding-top: 14px;
+}
+
+.riel-mes {
+  width: 330px;
+  spacing: 8px;
+}
+
+.riel-mes-navegacion {
+  spacing: 6px;
+}
+
+.riel-mes-titulo {
+  font-size: 1.35em;
+  font-weight: bold;
+}
+
+.riel-mes-dia-semana {
+  padding: 4px 0;
+  font-size: 0.85em;
+  color: rgba(242, 242, 242, 0.55);
+}
+
+.riel-dia {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  color: #f2f2f2;
+}
+
+.riel-dia-numero {
+  font-size: 1.05em;
+}
+
+.riel-dia:hover,
+.riel-dia:focus {
+  background-color: rgba(242, 242, 242, 0.1);
+}
+
+.riel-dia:otro-mes {
+  color: rgba(242, 242, 242, 0.4);
+}
+
+.riel-dia:elegido {
+  background-color: rgba(242, 242, 242, 0.16);
+}
+
+.riel-dia:hoy {
+  background-color: #1a7cf0;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.riel-dia-punto {
+  width: 4px;
+  height: 4px;
+  margin-bottom: 1px;
+  border-radius: 2px;
+  background-color: #3d8bfd;
+}
+
+.riel-dia:hoy .riel-dia-punto {
+  background-color: #ffffff;
+}
+
+/* Agenda del día */
+.riel-agenda {
+  spacing: 2px;
+}
+
+.riel-agenda-dia-semana {
+  font-size: 0.85em;
+  color: rgba(242, 242, 242, 0.55);
+}
+
+.riel-agenda-fecha {
+  font-size: 1.7em;
+  font-weight: bold;
+}
+
+.riel-agenda-cantidad {
+  color: rgba(242, 242, 242, 0.55);
+}
+
+.riel-agenda-lista {
+  padding-top: 10px;
+  spacing: 10px;
+}
+
+.riel-evento {
+  spacing: 10px;
+}
+
+.riel-evento-barra {
+  width: 3px;
+  border-radius: 2px;
+}
+
+.riel-evento-color-0 {
+  background-color: #1a7cf0;
+}
+
+.riel-evento-color-1 {
+  background-color: #8b8cf5;
+}
+
+.riel-evento-hora {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.riel-evento-titulo {
+  font-weight: bold;
+}
+
+.riel-evento-duracion {
+  font-size: 0.85em;
+  color: rgba(242, 242, 242, 0.55);
+}
+
+.riel-agenda-accion {
+  padding: 4px 6px;
+  border-radius: 9px;
+  color: #f2f2f2;
+}
+
+.riel-agenda-accion StBoxLayout {
+  spacing: 10px;
+}
+
+.riel-agenda-accion:hover,
+.riel-agenda-accion:focus {
+  background-color: rgba(242, 242, 242, 0.08);
+}
+
+.riel-agenda-accion:insensitive {
+  color: rgba(242, 242, 242, 0.35);
+}
+
+.riel-agenda-accion-icono {
+  icon-size: 16px;
 }
 

@@ -1,5 +1,5 @@
-// Carrusel de la isla central expandida: una página a la vez, con puntos para
-// elegir la página. Cada página es un actor con dos avisos opcionales,
+// Carrusel de la isla central expandida: una página a la vez, con su nombre y
+// puntos para elegir la página. Cada página es un actor con dos avisos opcionales,
 // alMostrar() y alOcultar(), para que solo trabaje mientras se ve (por
 // ejemplo, la posición de la canción en Música).
 
@@ -7,10 +7,9 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import * as Calendar from 'resource:///org/gnome/shell/ui/calendar.js';
 
 // Ancho de cada página (y del carrusel)
-const ANCHO = 440;
+const ANCHO = 680;
 const DURACION_MS = 250;
 
 export const Carrusel = GObject.registerClass(
@@ -33,6 +32,12 @@ class Carrusel extends St.BoxLayout {
         });
         this._ventana.add_child(this._tira);
         this.add_child(this._ventana);
+
+        this._nombre = new St.Label({
+            style_class: 'riel-carrusel-nombre',
+            x_align: Clutter.ActorAlign.CENTER,
+        });
+        this.add_child(this._nombre);
 
         this._puntos = new St.BoxLayout({
             style_class: 'riel-carrusel-puntos',
@@ -75,6 +80,7 @@ class Carrusel extends St.BoxLayout {
         if (this._visible)
             this._paginas[indice].alMostrar?.();
 
+        this._nombre.text = this._paginas[indice].nombre;
         this._puntos.get_children().forEach((punto, i) => {
             if (i === indice)
                 punto.add_style_pseudo_class('checked');
@@ -103,23 +109,5 @@ class Carrusel extends St.BoxLayout {
             mode: Clutter.AnimationMode.EASE_IN_OUT_SINE,
             onComplete: soloLaNueva,
         });
-    }
-});
-
-// Página Calendario: el calendario de GNOME, que vuelve al día de hoy cada
-// vez que se muestra
-export const PaginaCalendario = GObject.registerClass(
-class PaginaCalendario extends St.Bin {
-    _init() {
-        super._init({style_class: 'riel-pagina riel-pagina-calendario', x_expand: true});
-        this.nombre = 'Calendario';
-        this._calendario = new Calendar.Calendar();
-        // Sin fuente de eventos no arma la grilla; la vacía no marca eventos
-        this._calendario.setEventSource(new Calendar.EmptyEventSource());
-        this.set_child(this._calendario);
-    }
-
-    alMostrar() {
-        this._calendario.setDate(new Date());
     }
 });

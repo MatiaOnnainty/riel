@@ -14,12 +14,21 @@ import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
 
+import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import {PaginaCalendario} from './calendario.js';
 import {Carrusel} from './carrusel.js';
 import {Esquina} from './islas.js';
+
+// Aparición de la isla expandida: el fondo crece desde la isla del reloj y
+// el contenido se funde apenas después; al cerrar, lo inverso y más rápido
+const CRECER_MS = 180;
+const FUNDIR_MS = 150;
+const DEMORA_CONTENIDO_MS = 60;
+const CERRAR_MS = 120;
+const ALTO_INICIAL = 0.7;
 
 export const Reloj = GObject.registerClass(
 class Reloj extends PanelMenu.Button {
@@ -40,6 +49,7 @@ class Reloj extends PanelMenu.Button {
         this.menu.actor.add_style_class_name('riel-centro');
         this._carrusel = new Carrusel([new PaginaCalendario()]);
         this.menu.box.add_child(this._carrusel);
+        this._animarAparicion();
         this._uniones = new Alas(this.menu);
         this.menu.connectObject('open-state-changed', (_menu, abierto) => {
             if (abierto) {
@@ -57,6 +67,84 @@ class Reloj extends PanelMenu.Button {
         this._reloj = new GnomeDesktop.WallClock();
         this._reloj.connectObject('notify::clock', () => this._actualizar(), this);
         this._actualizar();
+    }
+
+    // Reemplaza el fundido de GNOME (todo el menú semitransparente, con la
+    // isla del reloj y las esquinas viéndose negras a través) por una isla
+    // opaca que crece y un contenido que se funde. Solo escala y opacidad:
+    // lo más barato de animar. Sin animaciones en GNOME, ease() termina al
+    // instante.
+    _animarAparicion() {
+        const menu = this.menu;
+        const fondo = menu.box;
+        const contenido = this._carrusel;
+        const abrir = menu.open.bind(menu);
+        const cerrar = menu.close.bind(menu);
+        let cerrando = false;
+
+        fondo.set_pivot_point(0.5, 0);
+        menu.open = () => {
+            if (menu.isOpen && !cerrando)
+                return;
+            fondo.remove_all_transitions();
+            contenido.remove_all_transitions();
+            if (cerrando) {
+                // Se volvió a abrir mientras se cerraba: queda abierta
+                cerrando = false;
+                fondo.scale_y = 1;
+                contenido.opacity = 255;
+                return;
+            }
+            fondo.scale_y = ALTO_INICIAL;
+            contenido.opacity = 0;
+            abrir(BoxPointer.PopupAnimation.NONE);
+            // Clutter no anima un actor que todavía no está en pantalla
+            // (pasaría directo al final): se espera a que lo esté
+            const animar = () => {
+                fondo.ease({scale_y: 1, duration: CRECER_MS, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+                contenido.ease({
+                    opacity: 255,
+                    delay: DEMORA_CONTENIDO_MS,
+                    duration: FUNDIR_MS,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+            };
+            if (fondo.mapped) {
+                animar();
+            } else {
+                const id = fondo.connect('notify::mapped', () => {
+                    fondo.disconnect(id);
+                    animar();
+                });
+            }
+        };
+        // Sin animación pedida (al destruir, al abrirse algo modal) cierra
+        // en el acto
+        menu.close = animar => {
+            if (!menu.isOpen || cerrando)
+                return;
+            if (!animar) {
+                fondo.remove_all_transitions();
+                contenido.remove_all_transitions();
+                cerrar(BoxPointer.PopupAnimation.NONE);
+                return;
+            }
+            cerrando = true;
+            contenido.ease({opacity: 0, duration: CERRAR_MS, mode: Clutter.AnimationMode.EASE_IN_QUAD});
+            fondo.ease({
+                scale_y: ALTO_INICIAL,
+                duration: CERRAR_MS,
+                mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                onComplete: () => {
+                    if (!cerrando)
+                        return;
+                    cerrando = false;
+                    cerrar(BoxPointer.PopupAnimation.NONE);
+                    fondo.scale_y = 1;
+                    contenido.opacity = 255;
+                },
+            });
+        };
     }
 
     // Formato de hora según GNOME (24 o 12 horas); también lo usa el

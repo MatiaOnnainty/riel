@@ -11,18 +11,21 @@ import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-// Esquina cóncava en un extremo de la isla ('inicio' o 'final'). Ocupa su
-// lugar dentro de la caja, como si fuera padding, y se dibuja desplazada
-// hacia afuera. El color y el tamaño vienen de .riel-esquina en
-// stylesheet.css.
-const Esquina = GObject.registerClass(
+// Esquina cóncava. Con 'inicio' o 'final' va en ese extremo de la isla:
+// ocupa su lugar dentro de la caja, como si fuera padding, y se dibuja
+// desplazada hacia afuera. Con 'union' la ubica quien la usa, en el ángulo
+// donde una isla expandida se ensancha por debajo del panel. El color y el
+// tamaño vienen de .riel-esquina en stylesheet.css.
+export const Esquina = GObject.registerClass(
 class Esquina extends St.DrawingArea {
-    _init(extremo) {
+    _init(forma) {
         super._init({style_class: 'riel-esquina', y_align: Clutter.ActorAlign.START});
-        this._extremo = extremo;
-        this.connect('notify::width', () => {
-            this.translation_x = extremo === 'inicio' ? -this.width : this.width;
-        });
+        this._forma = forma;
+        if (forma !== 'union') {
+            this.connect('notify::width', () => {
+                this.translation_x = forma === 'inicio' ? -this.width : this.width;
+            });
+        }
     }
 
     vfunc_repaint() {
@@ -31,11 +34,16 @@ class Esquina extends St.DrawingArea {
 
         // Relleno entre el borde de la isla, el borde de la pantalla (y = 0)
         // y un cuarto de círculo con centro en la esquina de abajo, del lado
-        // opuesto a la isla
-        if (this._extremo === 'final') {
+        // opuesto a la isla. 'union' es la misma figura apoyada abajo: entre
+        // el borde de la isla (x = 0) y el de la parte expandida (y = alto).
+        if (this._forma === 'final') {
             cr.moveTo(0, 0);
             cr.lineTo(ancho, 0);
             cr.arcNegative(ancho, alto, ancho, 3 * Math.PI / 2, Math.PI);
+        } else if (this._forma === 'union') {
+            cr.moveTo(0, alto);
+            cr.lineTo(ancho, alto);
+            cr.arc(ancho, 0, ancho, Math.PI / 2, Math.PI);
         } else {
             cr.moveTo(ancho, 0);
             cr.lineTo(0, 0);

@@ -35,6 +35,12 @@ escritorio entero. Por eso se prueba en un Shell aparte.
 - **Está aislado:** usa su propio bus D-Bus y su propia configuración en
   `.dev/`. Activar o romper Riel ahí no toca tu escritorio real.
 - Se ven tus apps, íconos y fuentes, y se copian tus fijadas y tu tema.
+- Si lo corrés desde la terminal de VS Code (snap), se vuelve a abrir solo
+  en GNOME Terminal: dentro del snap, GNOME confunde cada ventana de prueba
+  con VS Code.
+- Las apps que abras ahí (Archivos, Terminal…) se abren adentro de la
+  ventana de pruebas. No hay llavero de contraseñas y las apps solo X11 no
+  abren. Evitá Firefox, VS Code o Edge si ya están abiertos en tu escritorio.
 - Para probar un cambio: cerrá la ventana y volvé a correr `./dev.sh`. En
   Wayland no se puede recargar una extensión sin reiniciar el Shell.
 - Los errores de Riel aparecen en la terminal como `JS ERROR`. El resto de

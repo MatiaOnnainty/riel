@@ -23,6 +23,19 @@ done < <(env | grep -o '^[A-Z_]*_VSCODE_SNAP_ORIG=')
 unset GIO_LAUNCHED_DESKTOP_FILE GIO_LAUNCHED_DESKTOP_FILE_PID
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Desde la terminal de VS Code (snap), todo lo que se lanza hereda su
+# etiqueta de seguridad (snap.code.code) y GNOME asigna cada ventana de prueba
+# a VS Code: las apps parecen no abrir y el cursor queda cargando. En ese caso
+# dev.sh se vuelve a abrir solo en GNOME Terminal, que no tiene esa etiqueta.
+# RIEL_REEJECUTADO evita un bucle si la pestaña nueva también fuera de un snap.
+if [[ "$(cat /proc/self/attr/current 2>/dev/null)" == snap.* && -z "${RIEL_REEJECUTADO:-}" ]]; then
+  export RIEL_REEJECUTADO=1
+  echo "Esta terminal es de un snap (VS Code): abro el Shell de pruebas desde GNOME Terminal."
+  # La pestaña queda abierta al terminar, para poder leer los JS ERROR
+  exec gnome-terminal --title="Riel · Shell de pruebas" -- \
+    bash -c '"$@"; echo; read -rp "Enter para cerrar…"' _ "$repo/dev.sh" "$@"
+fi
+
 uuid="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["uuid"])' "$repo/extension/metadata.json")"
 dev="$repo/.dev"
 resolucion="${RIEL_RESOLUCION:-1366x768}"
@@ -39,6 +52,22 @@ done
 for f in user-dirs.dirs user-dirs.locale; do
   [[ -e "$HOME/.config/$f" && ! -e "$dev/config/$f" ]] && ln -s "$HOME/.config/$f" "$dev/config/$f"
 done
+
+# Sin llavero en la sesión de pruebas: el de GNOME detecta el de tu escritorio
+# real y no responde en este bus, y los portales esperan ~25 s hasta rendirse
+# (las apps tardan eso en abrir o no abren). Este servicio falla al instante y,
+# de paso, las apps de prueba no tocan tus contraseñas.
+mkdir -p "$dev/data/dbus-1/services"
+printf '[D-BUS Service]\nName=org.freedesktop.secrets\nExec=/bin/false\n' \
+  > "$dev/data/dbus-1/services/org.freedesktop.secrets.service"
+
+# Sin métodos de entrada en la sesión de pruebas: GNOME lanza "ibus-daemon"
+# buscándolo en el PATH, y el de una sesión aislada llegó a ocupar 6,4 GB y
+# el sistema cerró VS Code por falta de memoria. Este falso termina al
+# instante; la distribución del teclado sigue andando sin ibus.
+mkdir -p "$dev/bin"
+printf '#!/bin/sh\nexit 0\n' > "$dev/bin/ibus-daemon"
+chmod +x "$dev/bin/ibus-daemon"
 
 # Riel: enlazada solo cuando ya tiene código
 enlace="$dev/data/gnome-shell/extensions/$uuid"
@@ -62,12 +91,16 @@ esquema="$(leer org.gnome.desktop.interface color-scheme)"
 # abren una ventana propia) + Riel
 extensiones="['ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com'${riel:+, $riel}]"
 
-export XDG_CONFIG_HOME="$dev/config" XDG_DATA_HOME="$dev/data" \
+# La pantalla de pruebas lleva el número de proceso: dos sesiones a la vez
+# (por ejemplo, la tuya y una prueba automática) no chocan
+export PATH="$dev/bin:$PATH" \
+       XDG_CONFIG_HOME="$dev/config" XDG_DATA_HOME="$dev/data" \
        XDG_CACHE_HOME="$dev/cache" XDG_STATE_HOME="$dev/state" \
        MUTTER_DEBUG_DUMMY_MODE_SPECS="$resolucion" \
        SHELL_DEBUG=backtrace-warnings \
        RIEL_FAVORITAS="$favoritas" RIEL_GTK="$gtk_tema" RIEL_ICONOS="$iconos" \
-       RIEL_ESQUEMA="$esquema" RIEL_EXTENSIONES="$extensiones"
+       RIEL_ESQUEMA="$esquema" RIEL_EXTENSIONES="$extensiones" \
+       RIEL_WAYLAND="wayland-riel-$$"
 
 echo "Shell de pruebas a $resolucion. Cerrá la ventana para terminar."
 exec dbus-run-session -- bash -c '
@@ -78,5 +111,9 @@ exec dbus-run-session -- bash -c '
   poner org.gnome.desktop.interface color-scheme "$RIEL_ESQUEMA"
   poner org.gnome.shell enabled-extensions "$RIEL_EXTENSIONES"
   poner org.gnome.shell disable-user-extensions false
-  exec gnome-shell --nested --wayland
+  # Archivos, Terminal y otras apps arrancan por D-Bus y toman el entorno de
+  # este bus. Sin esto heredan WAYLAND_DISPLAY=wayland-0 (tu escritorio real)
+  # y se abren afuera. Las apps solo X11 no abren acá (DISPLAY vacío).
+  dbus-update-activation-environment WAYLAND_DISPLAY="$RIEL_WAYLAND" DISPLAY=
+  exec gnome-shell --nested --wayland --wayland-display "$RIEL_WAYLAND"
 '

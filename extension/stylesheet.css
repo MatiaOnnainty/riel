@@ -54,16 +54,20 @@
   margin: 0 1px;
 }
 
+/* Un punto por ventana abierta; más claros en la app que está al frente */
+#panel.riel .riel-app .riel-app-puntos {
+  spacing: 2px;
+  margin-bottom: 1px;
+}
+
 #panel.riel .riel-app .riel-app-punto {
   width: 4px;
   height: 4px;
-  margin-bottom: 1px;
   border-radius: 2px;
-  background-color: rgba(242, 242, 242, 0.6);
+  background-color: rgba(242, 242, 242, 0.45);
 }
 
 #panel.riel .riel-app:enfocada .riel-app-punto {
-  width: 10px;
   background-color: #f2f2f2;
 }
 
@@ -85,3 +89,44 @@
 #panel.riel .riel-fecha {
   font-weight: normal;
 }
+
+/* Isla izquierda expandida (fase 2). La vista vive fuera de #panel, en la
+   capa de la interfaz, por eso sus reglas no cuelgan de #panel.riel */
+#panel.riel #panelLeft:expandida {
+  border-radius: 0;
+}
+
+.riel-vista {
+  background-color: #0b0b0e;
+  border-radius: 0 0 18px 18px;
+  padding: 8px 10px 12px;
+  spacing: 8px;
+}
+
+.riel-vista:ancha {
+  border-radius: 0 18px 18px 18px;
+}
+
+.riel-vista-raiz .riel-esquina {
+  color: #0b0b0e;
+  width: 14px;
+  height: 14px;
+}
+
+.riel-miniatura {
+  padding: 6px;
+  border-radius: 12px;
+  color: #f2f2f2;
+}
+
+.riel-miniatura:hover,
+.riel-miniatura:focus {
+  background-color: rgba(242, 242, 242, 0.12);
+}
+
+.riel-miniatura-titulo {
+  margin-top: 6px;
+  font-size: 0.9em;
+  text-align: center;
+}
+

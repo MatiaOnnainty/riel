@@ -119,6 +119,13 @@ class Reloj extends PanelMenu.Button {
                 });
             }
         };
+        // Clic en el reloj o Super+V mientras se está cerrando: vuelve a abrir
+        menu.toggle = () => {
+            if (menu.isOpen && !cerrando)
+                menu.close(BoxPointer.PopupAnimation.FULL);
+            else
+                menu.open();
+        };
         // Sin animación pedida (al destruir, al abrirse algo modal) cierra
         // en el acto
         menu.close = animar => {

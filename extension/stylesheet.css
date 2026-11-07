@@ -127,6 +127,24 @@
   color: #f2f2f2;
 }
 
+.riel-carrusel-fila {
+  spacing: 6px;
+}
+
+/* Botones para cambiar de panel: sutiles hasta que se les pasa el cursor */
+.riel-carrusel-flecha {
+  padding: 6px;
+  border-radius: 999px;
+  background-color: rgba(242, 242, 242, 0.06);
+  color: rgba(242, 242, 242, 0.7);
+}
+
+.riel-carrusel-flecha:hover,
+.riel-carrusel-flecha:focus {
+  background-color: rgba(242, 242, 242, 0.16);
+  color: #f2f2f2;
+}
+
 .riel-carrusel-nombre {
   padding-top: 10px;
   font-size: 0.85em;
@@ -262,6 +280,10 @@
 /* Calendario */
 .riel-calendario-cuerpo {
   padding-top: 14px;
+}
+
+.riel-calendario {
+  width: 660px;
 }
 
 .riel-mes {
@@ -405,13 +427,17 @@
 }
 
 /* Música */
+.riel-musica {
+  width: 420px;
+  padding-top: 12px;
+}
+
 .riel-musica-cuerpo {
-  padding-top: 8px;
-  spacing: 14px;
+  spacing: 10px;
 }
 
 .riel-musica-arriba {
-  spacing: 18px;
+  spacing: 14px;
 }
 
 .riel-musica-caratula {
@@ -424,7 +450,7 @@
 }
 
 .riel-musica-titulo {
-  font-size: 1.5em;
+  font-size: 1.3em;
   font-weight: bold;
 }
 
@@ -433,14 +459,8 @@
   color: rgba(242, 242, 242, 0.7);
 }
 
-.riel-musica-app {
-  padding-top: 8px;
-  spacing: 4px;
-}
-
-.riel-musica-app-nombre {
-  font-size: 0.85em;
-  color: rgba(242, 242, 242, 0.5);
+.riel-musica-app .riel-boton-icono {
+  icon-size: 18px;
 }
 
 .riel-musica-progreso {
@@ -467,7 +487,7 @@
 }
 
 .riel-musica-volumen {
-  width: 180px;
+  width: 130px;
   spacing: 8px;
 }
 

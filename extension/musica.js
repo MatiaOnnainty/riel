@@ -1,6 +1,7 @@
-// Página Música del carrusel: el reproductor que sonó último, con carátula,
-// título, barra de progreso, controles y el volumen de esa app en el
-// mezclador. Con varios reproductores, ‹ › cambia de uno a otro.
+// Página Música del carrusel, compacta: el reproductor que sonó último, con
+// carátula, título, barra de progreso, controles y el volumen de esa app en
+// el mezclador. El botón de arriba a la derecha muestra la app que suena y,
+// con varios reproductores, pasa al siguiente.
 //
 // La posición de la canción se consulta una vez por segundo, y solo
 // mientras la página se ve y algo suena.
@@ -15,9 +16,8 @@ import {Slider} from 'resource:///org/gnome/shell/ui/slider.js';
 import * as Volume from 'resource:///org/gnome/shell/ui/status/volume.js';
 
 import {Reproductores} from './mpris.js';
-import {Encabezado} from './pagina.js';
 
-const TAMANO_CARATULA = 112;
+const TAMANO_CARATULA = 76;
 
 function tiempo(segundos) {
     const s = Math.max(0, Math.floor(segundos));
@@ -46,8 +46,6 @@ class PaginaMusica extends St.BoxLayout {
         this._arrastrando = false;
         this._sondeo = 0;
 
-        this._encabezado = new Encabezado('audio-x-generic-symbolic', 'Música');
-        this.add_child(this._encabezado.actor);
 
         this._vacio = new St.BoxLayout({
             style_class: 'riel-musica-vacio',
@@ -99,13 +97,11 @@ class PaginaMusica extends St.BoxLayout {
 
     alMostrar() {
         this._visible = true;
-        this._encabezado.arrancar();
         this._dibujar();
     }
 
     alOcultar() {
         this._visible = false;
-        this._encabezado.detener();
         this._detenerSondeo();
     }
 
@@ -124,19 +120,19 @@ class PaginaMusica extends St.BoxLayout {
         const datos = new St.BoxLayout({vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
         this._titulo = new St.Label({style_class: 'riel-musica-titulo'});
         this._artista = new St.Label({style_class: 'riel-musica-artista'});
-        const filaApp = new St.BoxLayout({style_class: 'riel-musica-app'});
-        this._nombreApp = new St.Label({style_class: 'riel-musica-app-nombre', y_align: Clutter.ActorAlign.CENTER, x_expand: true});
-        this._anteriorRep = boton('pan-start-symbolic', 'Reproductor anterior');
-        this._siguienteRep = boton('pan-end-symbolic', 'Reproductor siguiente');
-        this._anteriorRep.connect('clicked', () => this._cambiarReproductor(-1));
-        this._siguienteRep.connect('clicked', () => this._cambiarReproductor(1));
-        filaApp.add_child(this._nombreApp);
-        filaApp.add_child(this._anteriorRep);
-        filaApp.add_child(this._siguienteRep);
         datos.add_child(this._titulo);
         datos.add_child(this._artista);
-        datos.add_child(filaApp);
         arriba.add_child(datos);
+
+        // La app que suena; con varios reproductores, el clic pasa al siguiente
+        this._botonApp = new St.Button({
+            style_class: 'riel-boton-redondo riel-musica-app',
+            child: new St.Icon({style_class: 'riel-boton-icono'}),
+            can_focus: true,
+            y_align: Clutter.ActorAlign.START,
+        });
+        this._botonApp.connect('clicked', () => this._cambiarReproductor(1));
+        arriba.add_child(this._botonApp);
         this._cuerpo.add_child(arriba);
 
         // Barra de progreso: arrastrarla o hacer clic salta a ese punto
@@ -175,7 +171,6 @@ class PaginaMusica extends St.BoxLayout {
 
         // Volumen de la app en el mezclador; oculto si no se encuentra
         this._volumen = new St.BoxLayout({style_class: 'riel-musica-volumen'});
-        this._volumen.add_child(new St.Icon({icon_name: 'audio-volume-high-symbolic', style_class: 'riel-boton-icono', y_align: Clutter.ActorAlign.CENTER}));
         this._barraVolumen = new Slider(0);
         this._barraVolumen.accessible_name = 'Volumen';
         this._barraVolumen.x_expand = true;
@@ -186,6 +181,7 @@ class PaginaMusica extends St.BoxLayout {
             this._flujo.push_volume();
         });
         this._volumen.add_child(this._barraVolumen);
+        this._volumen.add_child(new St.Icon({icon_name: 'audio-volume-high-symbolic', style_class: 'riel-boton-icono', y_align: Clutter.ActorAlign.CENTER}));
         controles.add_child(this._volumen);
         this._cuerpo.add_child(controles);
     }
@@ -219,8 +215,14 @@ class PaginaMusica extends St.BoxLayout {
         this._titulo.text = r.titulo;
         this._artista.text = r.artistas;
         this._artista.visible = !!r.artistas;
-        this._nombreApp.text = r.nombre;
-        this._anteriorRep.visible = this._siguienteRep.visible = todos.length > 1;
+        const icono = this._botonApp.child;
+        if (r.app)
+            icono.gicon = r.app.get_icon();
+        else
+            icono.icon_name = 'audio-x-generic-symbolic';
+        this._botonApp.accessible_name = todos.length > 1
+            ? `${r.nombre}: pasar al siguiente reproductor` : r.nombre;
+        this._botonApp.reactive = todos.length > 1;
         if (r.caratula) {
             this._caratula.gicon = new Gio.FileIcon({file: Gio.File.new_for_uri(r.caratula)});
             this._caratula.icon_size = TAMANO_CARATULA;

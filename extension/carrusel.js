@@ -1,46 +1,63 @@
-// Carrusel de la isla central expandida: una página a la vez, con su nombre y
-// puntos para elegir la página. Cada página es un actor con dos avisos opcionales,
-// alMostrar() y alOcultar(), para que solo trabaje mientras se ve (por
-// ejemplo, la posición de la canción en Música).
+// Carrusel de la isla central expandida: una página a la vez, cada una con
+// su propio tamaño (Música compacta, Calendario grande). Se cambia de página
+// con los botones ‹ › de los costados, con los puntos o con Ctrl+← / Ctrl+→.
+//
+// Cada página es un actor con avisos opcionales: alAbrirCarrusel(),
+// alMostrar() y alOcultar() (para que solo trabaje mientras se ve), y
+// preferida() (si el carrusel debería abrir en ella).
 
 import Clutter from 'gi://Clutter';
-import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
-import Meta from 'gi://Meta';
 import St from 'gi://St';
 
-
-// Ancho de cada página (y del carrusel)
-const ANCHO = 680;
-const DURACION_MS = 250;
+// Al cambiar de página: la vieja se desvanece, la isla toma el tamaño de la
+// nueva y la nueva aparece. Con tamaños distintos queda más limpio que
+// deslizar, y solo anima opacidad y tamaño
+const SALIDA_MS = 90;
+const TAMANO_MS = 200;
+const ENTRADA_MS = 140;
 
 export const Carrusel = GObject.registerClass(
 class Carrusel extends St.BoxLayout {
     _init(paginas) {
-        super._init({style_class: 'riel-carrusel', vertical: true});
+        super._init({style_class: 'riel-carrusel', vertical: true, reactive: true});
         this._paginas = paginas;
         this._actual = 0;
         this._visible = false;
 
-        // La ventana recorta la tira de páginas. En la tira solo está
-        // visible la página actual (así el alto es el suyo); al cambiar se
-        // muestran las dos, la tira se desliza y queda solo la nueva
-        this._ventana = new St.Widget({clip_to_allocation: true, width: ANCHO});
-        this._tira = new St.BoxLayout();
+        const fila = new St.BoxLayout({style_class: 'riel-carrusel-fila'});
+        const flecha = (icono, nombre, paso) => {
+            const boton = new St.Button({
+                style_class: 'riel-carrusel-flecha',
+                child: new St.Icon({icon_name: icono, style_class: 'riel-boton-icono'}),
+                accessible_name: nombre,
+                can_focus: true,
+                y_align: Clutter.ActorAlign.CENTER,
+                visible: paginas.length > 1,
+            });
+            boton.connect('clicked', () => this.ir(this._actual + paso));
+            return boton;
+        };
+        fila.add_child(flecha('pan-start-symbolic', 'Panel anterior', -1));
+
+        // La ventana muestra solo la página actual y toma su tamaño
+        this._ventana = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            clip_to_allocation: true,
+            x_expand: true,
+        });
         paginas.forEach((pagina, i) => {
-            pagina.width = ANCHO;
+            pagina.x_align = Clutter.ActorAlign.CENTER;
+            pagina.y_align = Clutter.ActorAlign.START;
             pagina.visible = i === 0;
-            this._tira.add_child(pagina);
+            this._ventana.add_child(pagina);
         });
-        this._ventana.add_child(this._tira);
-        this.add_child(this._ventana);
+        fila.add_child(this._ventana);
+        fila.add_child(flecha('pan-end-symbolic', 'Panel siguiente', 1));
+        this.add_child(fila);
 
-        this._nombre = new St.Label({
-            style_class: 'riel-carrusel-nombre',
-            x_align: Clutter.ActorAlign.CENTER,
-        });
+        this._nombre = new St.Label({style_class: 'riel-carrusel-nombre', x_align: Clutter.ActorAlign.CENTER});
         this.add_child(this._nombre);
-
         this._puntos = new St.BoxLayout({
             style_class: 'riel-carrusel-puntos',
             x_align: Clutter.ActorAlign.CENTER,
@@ -57,38 +74,26 @@ class Carrusel extends St.BoxLayout {
         });
         this.add_child(this._puntos);
 
-        this._igualar = 0;
-        this.connect('destroy', () => {
-            if (this._igualar)
-                global.compositor.get_laters().remove(this._igualar);
+        // Ctrl+← / Ctrl+→: las flechas solas ya las usa GNOME para saltar
+        // entre los menús del panel y para moverse entre los días
+        this.connect('key-press-event', (_actor, evento) => {
+            if (!(evento.get_state() & Clutter.ModifierType.CONTROL_MASK))
+                return Clutter.EVENT_PROPAGATE;
+            const tecla = evento.get_key_symbol();
+            if (tecla === Clutter.KEY_Left || tecla === Clutter.KEY_Right) {
+                this.ir(this._actual + (tecla === Clutter.KEY_Left ? -1 : 1));
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
         });
     }
 
-    // Se abre en la página que cada una pida (la primera que diga
-    // preferida()), o en la primera
+    // Se abre en la primera página que diga preferida(), o en la primera
     alAbrir() {
         this._visible = true;
         this._paginas.forEach(pagina => pagina.alAbrirCarrusel?.());
-        this._igualarAltos();
-        // Algunas páginas (el calendario) terminan de medirse al dibujarse
-        // la primera vez: se vuelve a igualar justo antes del primer cuadro
-        if (!this._igualar) {
-            this._igualar = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, () => {
-                this._igualar = 0;
-                this._igualarAltos();
-                return GLib.SOURCE_REMOVE;
-            });
-        }
         const preferida = this._paginas.findIndex(pagina => pagina.preferida?.());
         this.ir(preferida >= 0 ? preferida : 0, false);
-    }
-
-    // Todas las páginas con el alto de la más alta: la isla no salta al
-    // pasar de una a otra
-    _igualarAltos() {
-        this._paginas.forEach(pagina => (pagina.min_height_set = false));
-        const alto = Math.max(...this._paginas.map(pagina => pagina.get_preferred_height(ANCHO)[1]));
-        this._paginas.forEach(pagina => (pagina.min_height = alto));
     }
 
     alCerrar() {
@@ -115,26 +120,52 @@ class Carrusel extends St.BoxLayout {
                 punto.remove_style_pseudo_class('checked');
         });
 
-        // Cancela un deslizamiento en curso antes de empezar otro
-        this._tira.remove_all_transitions();
-        const soloLaNueva = () => {
-            this._paginas.forEach((pagina, i) => (pagina.visible = i === indice));
-            this._tira.translation_x = 0;
-        };
-        if (!animar || anterior === indice) {
-            soloLaNueva();
+        // Un cambio anterior a medio animar se corta: queda visible solo la
+        // página que se estaba viendo, entera
+        const vieja = this._paginas.find(pagina => pagina.visible && pagina !== this._paginas[indice]) ??
+            this._paginas[anterior];
+        this._ventana.remove_all_transitions();
+        this._paginas.forEach(pagina => {
+            pagina.remove_all_transitions();
+            pagina.opacity = 255;
+            pagina.visible = pagina === vieja;
+        });
+        const nueva = this._paginas[indice];
+
+        if (!animar || vieja === nueva) {
+            vieja.visible = false;
+            nueva.visible = true;
+            this._ventana.set_size(-1, -1);
             return;
         }
 
-        // Las dos en la tira, en su orden: se desliza hacia la nueva
-        this._paginas.forEach((pagina, i) => (pagina.visible = i === indice || i === anterior));
-        const haciaAdelante = indice > anterior;
-        this._tira.translation_x = haciaAdelante ? 0 : -ANCHO;
-        this._tira.ease({
-            translation_x: haciaAdelante ? -ANCHO : 0,
-            duration: DURACION_MS,
-            mode: Clutter.AnimationMode.EASE_IN_OUT_SINE,
-            onComplete: soloLaNueva,
+        // La ventana queda fija en el tamaño de la vieja mientras se va
+        this._ventana.set_size(this._ventana.width, this._ventana.height);
+        vieja.ease({
+            opacity: 0,
+            duration: SALIDA_MS,
+            mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            onComplete: () => {
+                vieja.visible = false;
+                vieja.opacity = 255;
+                nueva.opacity = 0;
+                nueva.visible = true;
+                const [, ancho] = nueva.get_preferred_width(-1);
+                const [, alto] = nueva.get_preferred_height(ancho);
+                this._ventana.ease({
+                    width: ancho,
+                    height: alto,
+                    duration: TAMANO_MS,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => this._ventana.set_size(-1, -1),
+                });
+                nueva.ease({
+                    opacity: 255,
+                    delay: TAMANO_MS / 2,
+                    duration: ENTRADA_MS,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+            },
         });
     }
 });

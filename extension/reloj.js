@@ -4,6 +4,12 @@
 // sólida si hay sin leer. El clic la expande con el carrusel (Música,
 // Notificaciones, Calendario).
 //
+// Avisos: cuando GNOME va a mostrar una notificación, la isla compacta la
+// muestra en su lugar (ícono de la app, quién y parte del mensaje) con un
+// sonido suave, 4 s, y vuelve a su resumen. El cursor encima la pausa y un
+// clic la abre. Las críticas siguen con el aviso de GNOME (tienen botones),
+// y No molestar, pantalla completa, etc. se respetan porque decide GNOME.
+//
 // Es un botón del panel con su propio menú, así GNOME se encarga de cerrarlo
 // con un clic afuera o Esc, y de que haya un solo menú del panel abierto a
 // la vez (abrir el carrusel cierra el menú del sistema y viceversa). El
@@ -20,6 +26,7 @@ import St from 'gi://St';
 
 import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import {PaginaCalendario} from './calendario.js';
@@ -28,8 +35,12 @@ import {PaginaMusica} from './musica.js';
 import {PaginaNotificaciones} from './notificaciones.js';
 import {Esquina} from './islas.js';
 
-// Íconos propios (la campana sólida no existe en el tema del sistema)
-const ICONOS = Gio.File.new_for_uri(import.meta.url).get_parent().get_child('iconos');
+// Íconos y sonido propios (la campana sólida no existe en el tema del
+// sistema; el aviso es suave a propósito)
+const CARPETA = Gio.File.new_for_uri(import.meta.url).get_parent();
+const ICONOS = CARPETA.get_child('iconos');
+const SONIDO_AVISO = CARPETA.get_child('sonidos').get_child('riel-aviso.wav');
+const DURACION_AVISO_MS = 4000;
 const icono = nombre => new Gio.FileIcon({file: ICONOS.get_child(`${nombre}-symbolic.svg`)});
 
 // Aparición de la isla expandida: el fondo crece desde la isla del reloj y
@@ -66,6 +77,18 @@ class Reloj extends PanelMenu.Button {
         // Notificaciones sin leer
         this._campana = new St.Icon({style_class: 'riel-compacta-campana', y_align: Clutter.ActorAlign.CENTER});
         caja.add_child(this._campana);
+        // Aviso de una notificación que llega
+        this._aviso = new St.BoxLayout({style_class: 'riel-compacta-aviso', visible: false, y_align: Clutter.ActorAlign.CENTER});
+        this._avisoIcono = new St.Icon({style_class: 'riel-compacta-aviso-icono', y_align: Clutter.ActorAlign.CENTER});
+        this._avisoTitulo = new St.Label({style_class: 'riel-compacta-aviso-titulo', y_align: Clutter.ActorAlign.CENTER});
+        this._avisoCuerpo = new St.Label({style_class: 'riel-compacta-aviso-cuerpo', y_align: Clutter.ActorAlign.CENTER});
+        for (const etiqueta of [this._avisoTitulo, this._avisoCuerpo])
+            etiqueta.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._aviso.add_child(this._avisoIcono);
+        this._aviso.add_child(this._avisoTitulo);
+        this._aviso.add_child(this._avisoCuerpo);
+        caja.add_child(this._aviso);
+        this._caja = caja;
         this.add_child(caja);
 
         // La isla expandida: el menú crece desde el borde de arriba y tapa la
@@ -95,10 +118,147 @@ class Reloj extends PanelMenu.Button {
         this._reloj.connectObject('notify::clock', () => this._actualizar(), this);
         this._actualizar();
         this._compactar();
+        this._engancharAvisos();
+    }
+
+    // GNOME decide cuándo toca mostrar una notificación (con sus reglas de
+    // No molestar, pantalla completa, ocupado…) y llama a _showNotification.
+    // Ahí se toma la próxima de su cola, salvo las críticas, que siguen con
+    // el aviso de GNOME
+    _engancharAvisos() {
+        this._avisos = [];
+        this._avisoActual = null;
+        this._tiempoAviso = 0;
+        this._seguirCola = 0;
+        const bandeja = Main.messageTray;
+        const original = bandeja._showNotification;
+        // La decisión se toma un ciclo después de que GNOME la pide: GNOME
+        // puede avisar mientras todavía está cargando los datos de la
+        // notificación (medido: llega como normal y recién después pasa a
+        // crítica). En ese ciclo se vuelve a pedir el estado a GNOME y, con
+        // los datos completos, la isla la toma o se la deja
+        let decidir = false;
+        bandeja._showNotification = () => {
+            const notificacion = bandeja._notificationQueue[0];
+            if (!notificacion || notificacion.urgency === MessageTray.Urgency.CRITICAL) {
+                original.call(bandeja);
+                return;
+            }
+            if (!decidir) {
+                this._reintentarCola(() => (decidir = true), () => (decidir = false));
+                return;
+            }
+            bandeja._notificationQueue.shift();
+            bandeja.emit('queue-changed');
+            // Mostrada, como cuando GNOME muestra su aviso
+            notificacion.acknowledged = true;
+            this._encolarAviso(notificacion);
+            // Puede haber más en la cola: GNOME sigue en el próximo ciclo
+            this._reintentarCola();
+        };
+        this.connect('notify::hover', () => this._programarFinAviso());
+    }
+
+    // Le pide a GNOME que revise su cola en el próximo ciclo (ahora está en
+    // medio de su cálculo); antes y después, lo que haga falta
+    _reintentarCola(antes = () => {}, despues = () => {}) {
+        if (this._seguirCola)
+            return;
+        this._seguirCola = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            this._seguirCola = 0;
+            antes();
+            Main.messageTray._updateState();
+            despues();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _soltarAvisos() {
+        delete Main.messageTray._showNotification;
+        if (this._seguirCola)
+            GLib.source_remove(this._seguirCola);
+        if (this._tiempoAviso)
+            GLib.source_remove(this._tiempoAviso);
+        this._seguirCola = this._tiempoAviso = 0;
+        this._avisos.forEach(n => n.disconnectObject(this));
+        this._avisos = [];
+        this._avisoActual?.disconnectObject(this);
+        this._avisoActual = null;
+    }
+
+    // Se vigila desde que entra a la cola: si la descartan (o la app la
+    // retira) antes de mostrarse, sale sin mostrarse ni sonar; si se está
+    // viendo, se pasa a la próxima
+    _encolarAviso(notificacion) {
+        notificacion.connectObject('destroy', () => {
+            notificacion.disconnectObject(this);
+            if (notificacion === this._avisoActual)
+                this._terminarAviso();
+            else
+                this._avisos = this._avisos.filter(n => n !== notificacion);
+        }, this);
+        this._avisos.push(notificacion);
+        if (!this._avisoActual)
+            this._siguienteAviso();
+    }
+
+    // De a uno: cada aviso dura lo suyo y después viene el próximo
+    _siguienteAviso() {
+        this._avisoActual?.disconnectObject(this);
+        this._avisoActual = this._avisos.shift() ?? null;
+        const n = this._avisoActual;
+        if (!n) {
+            this._aviso.visible = false;
+            this._compactar();
+            this._aparecer();
+            return;
+        }
+
+        this._avisoIcono.gicon = n.source?.icon ?? n.gicon ?? new Gio.ThemedIcon({name: 'dialog-information-symbolic'});
+        this._avisoTitulo.text = n.title ?? '';
+        this._avisoCuerpo.text = (n.body ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+        this._avisoCuerpo.visible = !!this._avisoCuerpo.text;
+        this.accessible_name = [n.title, this._avisoCuerpo.text].filter(Boolean).join(': ');
+        this._horaFecha.visible = this._musica.visible = this._campana.visible = false;
+        this._aviso.visible = true;
+        this._aparecer();
+        global.display.get_sound_player().play_from_file(SONIDO_AVISO, 'Notificación', null);
+        this._programarFinAviso();
+    }
+
+    // 4 s desde que llega, o desde que el cursor se va de encima
+    _programarFinAviso() {
+        if (this._tiempoAviso)
+            GLib.source_remove(this._tiempoAviso);
+        this._tiempoAviso = 0;
+        if (!this._avisoActual || this.hover)
+            return;
+        this._tiempoAviso = GLib.timeout_add(GLib.PRIORITY_DEFAULT, DURACION_AVISO_MS, () => {
+            this._tiempoAviso = 0;
+            this._terminarAviso();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _terminarAviso() {
+        if (this._tiempoAviso)
+            GLib.source_remove(this._tiempoAviso);
+        this._tiempoAviso = 0;
+        this._siguienteAviso();
+    }
+
+    // Cambio suave del contenido de la isla compacta
+    _aparecer() {
+        this._caja.remove_all_transitions();
+        this._caja.opacity = 0;
+        this._caja.ease({opacity: 255, duration: 160, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
     }
 
     // La isla compacta según el resumen del panel activo
     _compactar() {
+        // Mientras se ve un aviso, el resumen espera a que termine
+        if (this._avisoActual)
+            return;
         const resumen = this._carrusel.paginaActiva.resumen?.() ?? null;
         const musica = !!resumen?.texto;
         this._musica.visible = musica;
@@ -168,6 +328,13 @@ class Reloj extends PanelMenu.Button {
         };
         // Clic en el reloj o Super+V mientras se está cerrando: vuelve a abrir
         menu.toggle = () => {
+            // Clic sobre un aviso: abre esa notificación
+            if (this._avisoActual && !menu.isOpen) {
+                const notificacion = this._avisoActual;
+                this._terminarAviso();
+                notificacion.activate();
+                return;
+            }
             if (menu.isOpen && !cerrando)
                 menu.close(BoxPointer.PopupAnimation.FULL);
             else
@@ -216,6 +383,7 @@ class Reloj extends PanelMenu.Button {
     }
 
     destroy() {
+        this._soltarAvisos();
         this._reloj.disconnectObject(this);
         this._ajustes.disconnectObject(this);
         this._reloj = null;

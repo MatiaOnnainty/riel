@@ -111,6 +111,24 @@
   color: rgba(242, 242, 242, 0.75);
 }
 
+#panel.riel .riel-compacta-aviso {
+  spacing: 8px;
+}
+
+#panel.riel .riel-compacta-aviso-icono {
+  icon-size: 18px;
+}
+
+#panel.riel .riel-compacta-aviso-titulo {
+  max-width: 130px;
+}
+
+#panel.riel .riel-compacta-aviso-cuerpo {
+  max-width: 190px;
+  font-weight: normal;
+  color: rgba(242, 242, 242, 0.7);
+}
+
 #panel.riel .riel-reloj-boton {
   -natural-hpadding: 8px;
   -minimum-hpadding: 4px;

@@ -1,5 +1,8 @@
-// Isla central: hora grande y fecha corta ("16:42 | Sáb 31 oct"). El clic
-// expande la isla con el carrusel (Música, Calendario).
+// Isla central. Compacta, resume el panel activo (el último en el que se
+// cerró la isla): Calendario → hora y fecha ("16:42 | Sáb 31 oct"); Música →
+// carátula y "título · artista"; Notificaciones → hora, fecha y una campana
+// sólida si hay sin leer. El clic la expande con el carrusel (Música,
+// Notificaciones, Calendario).
 //
 // Es un botón del panel con su propio menú, así GNOME se encarga de cerrarlo
 // con un clic afuera o Esc, y de que haya un solo menú del panel abierto a
@@ -11,6 +14,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GnomeDesktop from 'gi://GnomeDesktop';
 import GObject from 'gi://GObject';
+import Pango from 'gi://Pango';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
 
@@ -23,6 +27,10 @@ import {Carrusel} from './carrusel.js';
 import {PaginaMusica} from './musica.js';
 import {PaginaNotificaciones} from './notificaciones.js';
 import {Esquina} from './islas.js';
+
+// Íconos propios (la campana sólida no existe en el tema del sistema)
+const ICONOS = Gio.File.new_for_uri(import.meta.url).get_parent().get_child('iconos');
+const icono = nombre => new Gio.FileIcon({file: ICONOS.get_child(`${nombre}-symbolic.svg`)});
 
 // Aparición de la isla expandida: el fondo crece desde la isla del reloj y
 // el contenido se funde apenas después; al cerrar, lo inverso y más rápido
@@ -39,11 +47,25 @@ class Reloj extends PanelMenu.Button {
         this.add_style_class_name('riel-reloj-boton');
 
         const caja = new St.BoxLayout({style_class: 'riel-reloj', y_align: Clutter.ActorAlign.CENTER});
+        // Hora y fecha
+        this._horaFecha = new St.BoxLayout({y_align: Clutter.ActorAlign.CENTER});
         this._hora = new St.Label({style_class: 'riel-hora', y_align: Clutter.ActorAlign.CENTER});
         this._fecha = new St.Label({style_class: 'riel-fecha', y_align: Clutter.ActorAlign.CENTER});
-        caja.add_child(this._hora);
-        caja.add_child(new St.Widget({style_class: 'riel-separador', y_align: Clutter.ActorAlign.CENTER}));
-        caja.add_child(this._fecha);
+        this._horaFecha.add_child(this._hora);
+        this._horaFecha.add_child(new St.Widget({style_class: 'riel-separador', y_align: Clutter.ActorAlign.CENTER}));
+        this._horaFecha.add_child(this._fecha);
+        caja.add_child(this._horaFecha);
+        // Lo que suena
+        this._musica = new St.BoxLayout({style_class: 'riel-compacta-musica', y_align: Clutter.ActorAlign.CENTER});
+        this._caratula = new St.Icon({style_class: 'riel-compacta-caratula', y_align: Clutter.ActorAlign.CENTER});
+        this._cancion = new St.Label({style_class: 'riel-compacta-cancion', y_align: Clutter.ActorAlign.CENTER});
+        this._cancion.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._musica.add_child(this._caratula);
+        this._musica.add_child(this._cancion);
+        caja.add_child(this._musica);
+        // Notificaciones sin leer
+        this._campana = new St.Icon({style_class: 'riel-compacta-campana', y_align: Clutter.ActorAlign.CENTER});
+        caja.add_child(this._campana);
         this.add_child(caja);
 
         // La isla expandida: el menú crece desde el borde de arriba y tapa la
@@ -51,6 +73,9 @@ class Reloj extends PanelMenu.Button {
         this.menu.actor.add_style_class_name('riel-centro');
         this._carrusel = new Carrusel([new PaginaMusica(), new PaginaNotificaciones(), new PaginaCalendario()]);
         this.menu.box.add_child(this._carrusel);
+        this._carrusel.connectObject('activa-cambio', () => this._compactar(), this);
+        this._carrusel._paginas.filter(pagina => pagina.resumen).forEach(pagina =>
+            pagina.connectObject('resumen-cambio', () => this._compactar(), this));
         this._animarAparicion();
         this._uniones = new Alas(this.menu);
         this.menu.connectObject('open-state-changed', (_menu, abierto) => {
@@ -69,6 +94,27 @@ class Reloj extends PanelMenu.Button {
         this._reloj = new GnomeDesktop.WallClock();
         this._reloj.connectObject('notify::clock', () => this._actualizar(), this);
         this._actualizar();
+        this._compactar();
+    }
+
+    // La isla compacta según el resumen del panel activo
+    _compactar() {
+        const resumen = this._carrusel.paginaActiva.resumen?.() ?? null;
+        const musica = !!resumen?.texto;
+        this._musica.visible = musica;
+        this._horaFecha.visible = !musica;
+        if (musica) {
+            this._caratula.gicon = resumen.gicon;
+            this._cancion.text = resumen.texto;
+            this.accessible_name = `Sonando: ${resumen.texto}`;
+        } else {
+            this.accessible_name = 'Reloj';
+        }
+        this._campana.visible = !!resumen?.campana;
+        if (resumen?.campana) {
+            this._campana.gicon = icono(resumen.sinLeer ? 'riel-campana-llena' : 'riel-campana-vacia');
+            this._campana.accessible_name = resumen.sinLeer ? 'Hay notificaciones sin leer' : 'Sin notificaciones nuevas';
+        }
     }
 
     // Reemplaza el fundido de GNOME (todo el menú semitransparente, con la

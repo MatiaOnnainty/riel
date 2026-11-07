@@ -90,6 +90,27 @@
   font-weight: normal;
 }
 
+/* Isla compacta según el panel activo */
+#panel.riel .riel-compacta-musica {
+  spacing: 8px;
+}
+
+#panel.riel .riel-compacta-caratula {
+  icon-size: 20px;
+  border-radius: 4px;
+}
+
+#panel.riel .riel-compacta-cancion {
+  max-width: 260px;
+  font-weight: normal;
+}
+
+#panel.riel .riel-compacta-campana {
+  icon-size: 14px;
+  margin-left: 10px;
+  color: rgba(242, 242, 242, 0.75);
+}
+
 #panel.riel .riel-reloj-boton {
   -natural-hpadding: 8px;
   -minimum-hpadding: 4px;

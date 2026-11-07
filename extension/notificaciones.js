@@ -94,8 +94,9 @@ class Fila extends St.Button {
     }
 });
 
-export const PaginaNotificaciones = GObject.registerClass(
-class PaginaNotificaciones extends St.BoxLayout {
+export const PaginaNotificaciones = GObject.registerClass({
+    Signals: {'resumen-cambio': {}},
+}, class PaginaNotificaciones extends St.BoxLayout {
     _init() {
         super._init({style_class: 'riel-pagina riel-notificaciones', vertical: true});
         this.nombre = 'Notificaciones';
@@ -103,6 +104,10 @@ class PaginaNotificaciones extends St.BoxLayout {
         this.conTitulo = true;
         this._visible = false;
         this._minuto = 0;
+        // Hasta cuándo se miró esta página: lo que llegó después está "sin
+        // leer" para la campana de la isla compacta. No sirve el
+        // "acknowledged" de GNOME: lo marca apenas muestra un aviso
+        this._vistoHasta = null;
 
         const arriba = new St.Widget({layout_manager: new Clutter.BinLayout(), style_class: 'riel-notif-arriba'});
         arriba.add_child(new St.Label({
@@ -163,13 +168,24 @@ class PaginaNotificaciones extends St.BoxLayout {
         this.add_child(this._desplazable);
 
         // Se sigue a cada fuente de notificaciones (una por app)
-        const seguir = fuente => fuente.connectObject(
-            'notification-added', (_fuente, notificacion) => {
-                if (this._visible)
-                    marcarVista(notificacion);
-                this._cambio();
-            },
-            'notification-removed', () => this._cambio(), this);
+        // (cada notificación también avisa cuando pasa a vista: lo usa la
+        // campana de la isla compacta)
+        const vigilar = notificacion => notificacion.connectObject('notify::acknowledged',
+            () => this.emit('resumen-cambio'), this);
+        const seguir = fuente => {
+            fuente.notifications.forEach(vigilar);
+            fuente.connectObject(
+                'notification-added', (_fuente, notificacion) => {
+                    vigilar(notificacion);
+                    if (this._visible)
+                        marcarVista(notificacion);
+                    this._cambio();
+                },
+                'notification-removed', (_fuente, notificacion) => {
+                    notificacion.disconnectObject(this);
+                    this._cambio();
+                }, this);
+        };
         Main.messageTray.getSources().forEach(seguir);
         Main.messageTray.connectObject(
             'source-added', (_bandeja, fuente) => {
@@ -184,6 +200,7 @@ class PaginaNotificaciones extends St.BoxLayout {
         this.connect('destroy', () => {
             this._ajustes.disconnectObject(this);
             this._detenerMinuto();
+            this._notificaciones().forEach(n => n.disconnectObject(this));
             Main.messageTray.getSources().forEach(fuente => fuente.disconnectObject(this));
         });
         this._dibujar();
@@ -191,6 +208,8 @@ class PaginaNotificaciones extends St.BoxLayout {
 
     alMostrar() {
         this._visible = true;
+        this._vistoHasta = GLib.DateTime.new_now_local();
+        this.emit('resumen-cambio');
         this._dibujar();
         this._notificaciones().forEach(marcarVista);
         if (!this._minuto) {
@@ -215,6 +234,16 @@ class PaginaNotificaciones extends St.BoxLayout {
     _cambio() {
         if (this._visible)
             this._dibujar();
+        this.emit('resumen-cambio');
+    }
+
+    // Para la isla compacta: hora y fecha, más una campana sólida si hay
+    // notificaciones sin leer o de contorno si no
+    resumen() {
+        // Antes de mirar la página por primera vez cuenta el criterio de GNOME
+        const sinLeer = this._notificaciones().some(n => this._vistoHasta
+            ? n.datetime.compare(this._vistoHasta) > 0 : !n.acknowledged);
+        return {campana: true, sinLeer};
     }
 
     // Las más nuevas arriba

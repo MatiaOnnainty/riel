@@ -88,8 +88,9 @@ iconos="$(leer org.gnome.desktop.interface icon-theme)"
 esquema="$(leer org.gnome.desktop.interface color-scheme)"
 
 # Extensiones del sistema que trae Ubuntu (sin los íconos del escritorio, que
-# abren una ventana propia) + Riel
-extensiones="['ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com'${riel:+, $riel}]"
+# abren una ventana propia), los íconos de bandeja (AppIndicator: Toolbox,
+# Netbird…) + Riel
+extensiones="['ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com', 'ubuntu-appindicators@ubuntu.com'${riel:+, $riel}]"
 
 # La pantalla de pruebas lleva el número de proceso: dos sesiones a la vez
 # (por ejemplo, la tuya y una prueba automática) no chocan

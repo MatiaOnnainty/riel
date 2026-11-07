@@ -85,6 +85,17 @@
   border-bottom-width: 6px;
 }
 
+/* Isla derecha: CPU y RAM */
+#panel.riel .riel-recursos {
+  spacing: 14px;
+  padding: 0 10px 0 4px;
+}
+
+#panel.riel .riel-recursos-valor {
+  font-weight: normal;
+  font-feature-settings: "tnum";
+}
+
 /* Isla central */
 #panel.riel .riel-reloj {
   padding: 0 6px;

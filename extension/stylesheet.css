@@ -76,6 +76,15 @@
   margin: 0 2px;
 }
 
+/* Hover en las islas central y derecha: una pastilla más baja que flota en
+   el medio de la isla, con el mismo aire arriba y abajo (6 px), así no se
+   acerca a la curva del borde de abajo */
+#panel.riel #panelCenter .panel-button,
+#panel.riel #panelRight .panel-button {
+  border-top-width: 6px;
+  border-bottom-width: 6px;
+}
+
 /* Isla central */
 #panel.riel .riel-reloj {
   padding: 0 6px;

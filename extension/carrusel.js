@@ -4,7 +4,9 @@
 // ejemplo, la posición de la canción en Música).
 
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
+import Meta from 'gi://Meta';
 import St from 'gi://St';
 
 
@@ -54,14 +56,39 @@ class Carrusel extends St.BoxLayout {
             this._puntos.add_child(punto);
         });
         this.add_child(this._puntos);
+
+        this._igualar = 0;
+        this.connect('destroy', () => {
+            if (this._igualar)
+                global.compositor.get_laters().remove(this._igualar);
+        });
     }
 
     // Se abre en la página que cada una pida (la primera que diga
     // preferida()), o en la primera
     alAbrir() {
         this._visible = true;
+        this._paginas.forEach(pagina => pagina.alAbrirCarrusel?.());
+        this._igualarAltos();
+        // Algunas páginas (el calendario) terminan de medirse al dibujarse
+        // la primera vez: se vuelve a igualar justo antes del primer cuadro
+        if (!this._igualar) {
+            this._igualar = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, () => {
+                this._igualar = 0;
+                this._igualarAltos();
+                return GLib.SOURCE_REMOVE;
+            });
+        }
         const preferida = this._paginas.findIndex(pagina => pagina.preferida?.());
         this.ir(preferida >= 0 ? preferida : 0, false);
+    }
+
+    // Todas las páginas con el alto de la más alta: la isla no salta al
+    // pasar de una a otra
+    _igualarAltos() {
+        this._paginas.forEach(pagina => (pagina.min_height_set = false));
+        const alto = Math.max(...this._paginas.map(pagina => pagina.get_preferred_height(ANCHO)[1]));
+        this._paginas.forEach(pagina => (pagina.min_height = alto));
     }
 
     alCerrar() {

@@ -404,3 +404,89 @@
   icon-size: 16px;
 }
 
+/* Música */
+.riel-musica-cuerpo {
+  padding-top: 8px;
+  spacing: 14px;
+}
+
+.riel-musica-arriba {
+  spacing: 18px;
+}
+
+.riel-musica-caratula {
+  border-radius: 12px;
+}
+
+.riel-musica-caratula:vacia {
+  background-color: rgba(242, 242, 242, 0.08);
+  color: rgba(242, 242, 242, 0.4);
+}
+
+.riel-musica-titulo {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.riel-musica-artista {
+  padding-top: 2px;
+  color: rgba(242, 242, 242, 0.7);
+}
+
+.riel-musica-app {
+  padding-top: 8px;
+  spacing: 4px;
+}
+
+.riel-musica-app-nombre {
+  font-size: 0.85em;
+  color: rgba(242, 242, 242, 0.5);
+}
+
+.riel-musica-progreso {
+  spacing: 12px;
+}
+
+.riel-musica-tiempo {
+  min-width: 42px;
+  font-size: 0.9em;
+  font-feature-settings: "tnum";
+  color: rgba(242, 242, 242, 0.75);
+}
+
+.riel-musica-controles {
+  spacing: 12px;
+}
+
+.riel-musica-botones {
+  spacing: 18px;
+}
+
+.riel-musica-play .riel-boton-icono {
+  icon-size: 24px;
+}
+
+.riel-musica-volumen {
+  width: 180px;
+  spacing: 8px;
+}
+
+.riel-musica-vacio {
+  padding: 40px 0;
+  spacing: 10px;
+  color: rgba(242, 242, 242, 0.55);
+}
+
+.riel-musica-vacio-icono {
+  icon-size: 32px;
+}
+
+/* Barras de la página: azul de Riel sobre gris */
+.riel-musica .slider {
+  -barlevel-height: 4px;
+  -barlevel-background-color: rgba(242, 242, 242, 0.2);
+  -barlevel-active-background-color: #1a7cf0;
+  -slider-handle-radius: 6px;
+  color: #f2f2f2;
+}
+

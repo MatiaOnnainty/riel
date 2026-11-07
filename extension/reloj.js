@@ -20,6 +20,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import {PaginaCalendario} from './calendario.js';
 import {Carrusel} from './carrusel.js';
+import {PaginaMusica} from './musica.js';
 import {Esquina} from './islas.js';
 
 // Aparición de la isla expandida: el fondo crece desde la isla del reloj y
@@ -47,7 +48,7 @@ class Reloj extends PanelMenu.Button {
         // La isla expandida: el menú crece desde el borde de arriba y tapa la
         // isla del reloj (su encabezado repite fecha y hora)
         this.menu.actor.add_style_class_name('riel-centro');
-        this._carrusel = new Carrusel([new PaginaCalendario()]);
+        this._carrusel = new Carrusel([new PaginaMusica(), new PaginaCalendario()]);
         this.menu.box.add_child(this._carrusel);
         this._animarAparicion();
         this._uniones = new Alas(this.menu);

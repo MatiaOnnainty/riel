@@ -6,13 +6,14 @@
 import Clutter from 'gi://Clutter';
 import Gettext from 'gettext';
 import GLib from 'gi://GLib';
-import GnomeDesktop from 'gi://GnomeDesktop';
 import GObject from 'gi://GObject';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 
 import * as Calendar from 'resource:///org/gnome/shell/ui/calendar.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+
+import {Encabezado} from './pagina.js';
 
 const APP_CALENDARIO = 'org.gnome.Calendar.desktop';
 const SEMANAS = 6;
@@ -55,18 +56,20 @@ class PaginaCalendario extends St.BoxLayout {
         this._eventos = new Calendar.DBusEventSource();
         this._eventos.connectObject('changed', () => this._dibujar(), this);
 
-        this.add_child(this._armarEncabezado());
-        this.add_child(new St.Widget({style_class: 'riel-divisor riel-divisor-encabezado'}));
+        this._encabezado = new Encabezado('x-office-calendar-symbolic', 'Calendario');
+        this.add_child(this._encabezado.actor);
         const cuerpo = new St.BoxLayout({style_class: 'riel-calendario-cuerpo'});
         cuerpo.add_child(this._armarMes());
         cuerpo.add_child(new St.Widget({style_class: 'riel-divisor-vertical', y_expand: true}));
         cuerpo.add_child(this._armarAgenda());
         this.add_child(cuerpo);
 
-        this.connect('destroy', () => {
-            this.alOcultar();
-            this._eventos.destroy();
-        });
+        this.connect('destroy', () => this._eventos.destroy());
+    }
+
+    // Sin música sonando, el carrusel abre acá
+    preferida() {
+        return true;
     }
 
     // Al mostrarse vuelve al día de hoy y el reloj del encabezado avanza;
@@ -76,43 +79,11 @@ class PaginaCalendario extends St.BoxLayout {
         this._elegido = this._hoy;
         this._mes = dia(this._hoy.getFullYear(), this._hoy.getMonth(), 1);
         this._dibujar();
-        if (!this._relojPared) {
-            this._relojPared = new GnomeDesktop.WallClock();
-            this._relojPared.connectObject('notify::clock', () => this._actualizarHora(), this);
-        }
-        this._actualizarHora();
+        this._encabezado.arrancar();
     }
 
     alOcultar() {
-        this._relojPared?.disconnectObject(this);
-        this._relojPared = null;
-    }
-
-    _armarEncabezado() {
-        const fila = new St.BoxLayout({style_class: 'riel-pagina-encabezado'});
-        fila.add_child(new St.Icon({
-            icon_name: 'x-office-calendar-symbolic',
-            style_class: 'riel-pagina-icono',
-            y_align: Clutter.ActorAlign.CENTER,
-        }));
-        fila.add_child(new St.Label({
-            text: 'Calendario',
-            style_class: 'riel-pagina-titulo',
-            y_align: Clutter.ActorAlign.CENTER,
-            x_expand: true,
-        }));
-        this._fechaLarga = new St.Label({style_class: 'riel-encabezado-fecha', y_align: Clutter.ActorAlign.CENTER});
-        this._hora = new St.Label({style_class: 'riel-encabezado-hora', y_align: Clutter.ActorAlign.CENTER});
-        fila.add_child(this._fechaLarga);
-        fila.add_child(new St.Widget({style_class: 'riel-separador', y_align: Clutter.ActorAlign.CENTER}));
-        fila.add_child(this._hora);
-        return fila;
-    }
-
-    _actualizarHora() {
-        const ahora = GLib.DateTime.new_now_local();
-        this._fechaLarga.text = capital(ahora.format('%A, %-d de %B'));
-        this._hora.text = ahora.format(Main.panel.statusArea['riel-reloj']?.formatoHora ?? '%H:%M');
+        this._encabezado.detener();
     }
 
     _armarMes() {

@@ -7,8 +7,10 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {Apps} from './apps.js';
+import {IslaExpandida} from './islaExpandida.js';
 import {Islas} from './islas.js';
 import {Recursos} from './recursos.js';
+import {Sistema} from './sistema.js';
 import {Reloj} from './reloj.js';
 
 export default class Riel extends Extension {
@@ -40,9 +42,23 @@ export default class Riel extends Extension {
             if (derecha.get_child_at_index(1) !== this._recursos)
                 derecha.set_child_at_index(this._recursos, 1);
         }, this._recursos);
+
+        // El menú del sistema de GNOME, como isla expandida que cuelga de la
+        // isla derecha: la fila de estado (CPU, RAM, bandeja…) sigue arriba.
+        // Toca el borde de la pantalla: solo lleva unión a la izquierda
+        this._sistema = new IslaExpandida(Main.panel.statusArea.quickSettings.menu, {
+            caja: derecha,
+            lados: ['izquierda'],
+            cubrir: false,
+        });
+        this._contenidoSistema = new Sistema(Main.panel.statusArea.quickSettings.menu);
     }
 
     disable() {
+        this._contenidoSistema?.destroy();
+        this._contenidoSistema = null;
+        this._sistema?.destroy();
+        this._sistema = null;
         this._recursos?.destroy();
         this._recursos = null;
 

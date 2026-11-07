@@ -160,13 +160,14 @@
   box-shadow: none;
 }
 
-#panel.riel #panelCenter:expandida {
+#panel.riel #panelCenter:expandida,
+#panel.riel #panelRight:expandida {
   border-radius: 0;
 }
 
-/* Isla central expandida (fase 3): el menú del reloj, sin flecha ni borde
-   propios, pegado abajo de la isla y con su mismo color */
-.riel-centro {
+/* Islas expandidas (el menú del reloj y el del sistema): sin flecha ni
+   borde propios, del mismo color que la isla y creciendo desde arriba */
+.riel-isla-expandida {
   -arrow-border-radius: 0;
   -arrow-border-width: 0;
   -arrow-background-color: transparent;
@@ -176,7 +177,18 @@
   -boxpointer-gap: -36px;
 }
 
-.riel-centro .popup-menu-content {
+/* Colgando debajo de la isla (el menú del sistema) */
+.riel-isla-colgante {
+  -arrow-border-radius: 0;
+  -arrow-border-width: 0;
+  -arrow-background-color: transparent;
+  -arrow-base: 0;
+  -arrow-rise: 0;
+  -boxpointer-gap: 0;
+}
+
+.riel-isla-colgante .popup-menu-content,
+.riel-isla-expandida .popup-menu-content {
   background-color: #0b0b0e;
   border: none;
   border-radius: 0 0 18px 18px;
@@ -688,4 +700,56 @@
   padding: 24px 0 28px;
   color: rgba(242, 242, 242, 0.55);
 }
+
+/* Colgando, el menú sobresale a la izquierda de la isla: esa esquina de
+   arriba queda contra el fondo de pantalla y se redondea; la de la derecha
+   está pegada a la isla y al borde */
+.riel-isla-colgante .popup-menu-content {
+  border-radius: 18px 0 18px 18px;
+  padding-top: 14px;
+}
+
+/* Contenido del menú del sistema, según el diseño */
+.riel-sistema-titulo {
+  font-size: 1.05em;
+  color: rgba(242, 242, 242, 0.75);
+}
+
+.riel-sistema-porcentaje {
+  min-width: 44px;
+  padding-left: 6px;
+  font-feature-settings: "tnum";
+  text-align: right;
+  color: rgba(242, 242, 242, 0.85);
+}
+
+.riel-isla-colgante .quick-settings-system-item .icon-button {
+  background-color: rgba(242, 242, 242, 0.08);
+}
+
+.riel-isla-colgante .quick-settings-system-item .icon-button:hover,
+.riel-isla-colgante .quick-settings-system-item .icon-button:focus {
+  background-color: rgba(242, 242, 242, 0.16);
+}
+
+.riel-isla-colgante .quick-toggle {
+  border-radius: 16px;
+}
+
+.riel-isla-colgante .quick-toggle:hover {
+  background-color: rgba(242, 242, 242, 0.14);
+}
+
+.riel-isla-colgante .quick-toggle:checked:hover {
+  background-color: #2b8af7;
+}
+
+.riel-isla-colgante .quick-menu-toggle .quick-toggle {
+  border-radius: 16px 0 0 16px;
+}
+
+.riel-isla-colgante .quick-menu-toggle .quick-toggle-menu-button {
+  border-radius: 0 16px 16px 0;
+}
+
 

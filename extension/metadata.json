@@ -2,6 +2,9 @@
   "uuid": "riel@matiaonnainty.github.io",
   "name": "Riel",
   "description": "Lleva tus apps fijadas y abiertas al panel superior y suma un centro con la música que suena y el estado de tus sesiones.",
-  "shell-version": ["46"],
-  "url": "https://github.com/MatiaOnnainty/riel"
+  "shell-version": [
+    "46"
+  ],
+  "url": "https://github.com/MatiaOnnainty/riel",
+  "settings-schema": "org.gnome.shell.extensions.riel"
 }

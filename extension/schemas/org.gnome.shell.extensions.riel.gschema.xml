@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="riel">
+  <enum id="org.gnome.shell.extensions.riel.recursos-modo">
+    <value nick="texto" value="0"/>
+    <value nick="icono" value="1"/>
+  </enum>
+  <schema id="org.gnome.shell.extensions.riel" path="/org/gnome/shell/extensions/riel/">
+    <key name="recursos-modo" enum="org.gnome.shell.extensions.riel.recursos-modo">
+      <default>'texto'</default>
+      <summary>Cómo se muestran CPU y RAM en la isla derecha</summary>
+      <description>«texto» muestra «CPU 12%» y «RAM 4,2 GB»; «icono» muestra un ícono y el valor, para ocupar menos lugar en pantallas chicas.</description>
+    </key>
+  </schema>
+</schemalist>

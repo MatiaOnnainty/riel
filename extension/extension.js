@@ -35,7 +35,7 @@ export default class Riel extends Extension {
         // CPU y RAM al principio de la isla derecha (después de su esquina),
         // antes de los íconos de bandeja que otras extensiones agregan al
         // principio de la caja
-        this._recursos = new Recursos();
+        this._recursos = new Recursos(this.getSettings());
         const derecha = Main.panel._rightBox;
         derecha.insert_child_at_index(this._recursos, 1);
         derecha.connectObject('child-added', () => {

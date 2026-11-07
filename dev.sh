@@ -69,6 +69,9 @@ mkdir -p "$dev/bin"
 printf '#!/bin/sh\nexit 0\n' > "$dev/bin/ibus-daemon"
 chmod +x "$dev/bin/ibus-daemon"
 
+# Ajustes de Riel: el esquema se compila acá (el compilado no va al repo)
+[[ -d "$repo/extension/schemas" ]] && glib-compile-schemas "$repo/extension/schemas"
+
 # Riel: enlazada solo cuando ya tiene código
 enlace="$dev/data/gnome-shell/extensions/$uuid"
 rm -f "$enlace"

@@ -91,6 +91,15 @@
   padding: 0 10px 0 4px;
 }
 
+#panel.riel .riel-recursos-par {
+  spacing: 4px;
+}
+
+#panel.riel .riel-recursos-icono {
+  icon-size: 14px;
+  color: rgba(242, 242, 242, 0.75);
+}
+
 #panel.riel .riel-recursos-valor {
   font-weight: normal;
   font-feature-settings: "tnum";

@@ -69,6 +69,9 @@ mkdir -p "$dev/bin"
 printf '#!/bin/sh\nexit 0\n' > "$dev/bin/ibus-daemon"
 chmod +x "$dev/bin/ibus-daemon"
 
+# Ajustes de Riel: el esquema se compila acá (el compilado no va al repo)
+[[ -d "$repo/extension/schemas" ]] && glib-compile-schemas "$repo/extension/schemas"
+
 # Riel: enlazada solo cuando ya tiene código
 enlace="$dev/data/gnome-shell/extensions/$uuid"
 rm -f "$enlace"
@@ -88,8 +91,9 @@ iconos="$(leer org.gnome.desktop.interface icon-theme)"
 esquema="$(leer org.gnome.desktop.interface color-scheme)"
 
 # Extensiones del sistema que trae Ubuntu (sin los íconos del escritorio, que
-# abren una ventana propia) + Riel
-extensiones="['ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com'${riel:+, $riel}]"
+# abren una ventana propia), los íconos de bandeja (AppIndicator: Toolbox,
+# Netbird…) + Riel
+extensiones="['ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com', 'ubuntu-appindicators@ubuntu.com'${riel:+, $riel}]"
 
 # La pantalla de pruebas lleva el número de proceso: dos sesiones a la vez
 # (por ejemplo, la tuya y una prueba automática) no chocan

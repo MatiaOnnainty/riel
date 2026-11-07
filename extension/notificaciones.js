@@ -1,13 +1,15 @@
 // Página Notificaciones del carrusel: las notificaciones que GNOME guarda
 // (las mismas que mostraba el calendario original), en una tarjeta con
 // ícono, título, detalle y hace cuánto llegaron. Clic en una la abre;
-// "Limpiar" las descarta todas.
+// "Limpiar" las descarta todas. "No molestar" va del lado opuesto, para
+// no limpiar sin querer.
 //
 // La lista se arma al mostrarse la página; mientras no se ve, solo se anota
 // que cambió. Los "Hace 5 min" se actualizan una vez por minuto, y solo con
 // la página a la vista.
 
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
@@ -15,6 +17,7 @@ import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
+import {Switch} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 // Colores apagados para el círculo del ícono; cada app siempre el mismo
 const COLORES = 7;
@@ -118,6 +121,32 @@ class PaginaNotificaciones extends St.BoxLayout {
         });
         this._limpiar.connect('clicked', () => this._limpiarTodo());
         arriba.add_child(this._limpiar);
+
+        // No molestar = GNOME sin avisos emergentes (el mismo ajuste que el
+        // interruptor del calendario original)
+        this._ajustes = new Gio.Settings({schema_id: 'org.gnome.desktop.notifications'});
+        this._interruptor = new Switch(false);
+        const noMolestar = new St.Button({
+            style_class: 'riel-notif-no-molestar',
+            can_focus: true,
+            accessible_name: 'No molestar',
+            x_align: Clutter.ActorAlign.START,
+            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+        });
+        const fila = new St.BoxLayout({style_class: 'riel-notif-no-molestar-caja'});
+        fila.add_child(this._interruptor);
+        fila.add_child(new St.Label({text: 'No molestar', y_align: Clutter.ActorAlign.CENTER}));
+        noMolestar.set_child(fila);
+        noMolestar.connect('clicked', () =>
+            this._ajustes.set_boolean('show-banners', !this._ajustes.get_boolean('show-banners')));
+        const leer = () => {
+            this._interruptor.state = !this._ajustes.get_boolean('show-banners');
+            noMolestar.checked = this._interruptor.state;
+        };
+        this._ajustes.connectObject('changed::show-banners', leer, this);
+        leer();
+        arriba.add_child(noMolestar);
         this.add_child(arriba);
 
         this._vacio = new St.Label({text: 'Sin notificaciones', style_class: 'riel-notif-vacio', x_align: Clutter.ActorAlign.CENTER});
@@ -153,6 +182,7 @@ class PaginaNotificaciones extends St.BoxLayout {
             }, this);
 
         this.connect('destroy', () => {
+            this._ajustes.disconnectObject(this);
             this._detenerMinuto();
             Main.messageTray.getSources().forEach(fuente => fuente.disconnectObject(this));
         });

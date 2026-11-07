@@ -32,19 +32,28 @@ import {Carrusel} from './carrusel.js';
 import {PaginaMusica} from './musica.js';
 import {PaginaNotificaciones} from './notificaciones.js';
 import {IslaExpandida} from './islaExpandida.js';
+import {reproducirAviso} from './sonido.js';
 
 // Íconos y sonido propios (la campana sólida no existe en el tema del
 // sistema; el aviso es suave a propósito)
 const CARPETA = Gio.File.new_for_uri(import.meta.url).get_parent();
 const ICONOS = CARPETA.get_child('iconos');
-const SONIDO_AVISO = CARPETA.get_child('sonidos').get_child('riel-aviso.wav');
+// Apps que se recuerdan para silenciar en preferencias (las más recientes)
+const MAX_APPS_AVISADAS = 60;
+
+// Id de la app de una notificación (o de su fuente, si no viene de una app)
+function idDeApp(notificacion) {
+    const fuente = notificacion.source;
+    return fuente?.app?.get_id() ?? (fuente?.title ? `fuente:${fuente.title}` : 'sin-app');
+}
 const DURACION_AVISO_MS = 4000;
 const icono = nombre => new Gio.FileIcon({file: ICONOS.get_child(`${nombre}-symbolic.svg`)});
 
 
 export const Reloj = GObject.registerClass(
 class Reloj extends PanelMenu.Button {
-    _init() {
+    _init(ajustes) {
+        this._riel = ajustes;
         super._init(0.5, 'Reloj');
         this.add_style_class_name('riel-reloj-boton');
 
@@ -150,11 +159,38 @@ class Reloj extends PanelMenu.Button {
             bandeja.emit('queue-changed');
             // Mostrada, como cuando GNOME muestra su aviso
             notificacion.acknowledged = true;
-            this._encolarAviso(notificacion);
+            // Las apps silenciadas en preferencias quedan en la lista, sin
+            // aviso ni sonido
+            const app = this._recordarApp(notificacion);
+            if (!this._riel.get_strv('apps-silenciadas').includes(app))
+                this._encolarAviso(notificacion);
             // Puede haber más en la cola: GNOME sigue en el próximo ciclo
             this._reintentarCola();
         };
         this.connect('notify::hover', () => this._programarFinAviso());
+    }
+
+    // Anota la app (id|nombre) para que preferencias pueda silenciarla
+    _recordarApp(notificacion) {
+        const id = idDeApp(notificacion);
+        const nombre = notificacion.source?.app?.get_name() ?? notificacion.source?.title ??
+            'Otras (sin app conocida)';
+        const avisadas = this._riel.get_strv('apps-avisadas');
+        const entrada = `${id}|${nombre}`;
+        if (avisadas[0] !== entrada) {
+            const resto = avisadas.filter(e => !e.startsWith(`${id}|`));
+            this._riel.set_strv('apps-avisadas', [entrada, ...resto].slice(0, MAX_APPS_AVISADAS));
+        }
+        return id;
+    }
+
+    // Atajos de preferencias: con la isla cerrada la abre; abierta, cambia
+    // de panel
+    cambiarPanel(paso) {
+        if (!this.menu.isOpen)
+            this.menu.open();
+        else
+            this._carrusel.ir(this._carrusel._actual + paso);
     }
 
     // Le pide a GNOME que revise su cola en el próximo ciclo (ahora está en
@@ -220,7 +256,8 @@ class Reloj extends PanelMenu.Button {
         this._horaFecha.visible = this._musica.visible = this._campana.visible = false;
         this._aviso.visible = true;
         this._aparecer();
-        global.display.get_sound_player().play_from_file(SONIDO_AVISO, 'Notificación', null);
+        reproducirAviso(this._riel, archivo =>
+            global.display.get_sound_player().play_from_file(archivo, 'Notificación', null));
         this._programarFinAviso();
     }
 
